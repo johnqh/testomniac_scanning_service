@@ -13,3 +13,4 @@ export * from "./domain/types";
 export * from "./domain/url-ownership";
 export * from "./config/constants";
 export { ApiClient, getApiClient } from "./api/client";
+export * from "./detectors";
