@@ -1,0 +1,64 @@
+{
+  "name": "@sudobility/testomniac_scanning_service",
+  "version": "0.0.1",
+  "description": "Shared scanning logic for Testomniac scanner and Chrome extension",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "bunx eslint src/",
+    "lint:fix": "bunx eslint src/ --fix",
+    "format": "bunx prettier --write \"src/**/*.ts\"",
+    "format:check": "bunx prettier --check \"src/**/*.ts\"",
+    "verify": "bun run typecheck && bun run lint && bun run test && bun run build",
+    "prepublishOnly": "bun run verify"
+  },
+  "files": ["dist/**/*", "CLAUDE.md"],
+  "keywords": ["testomniac", "scanning", "browser", "testing"],
+  "author": "Sudobility",
+  "license": "BUSL-1.1",
+  "peerDependencies": {
+    "@sudobility/testomniac_types": ">=0.0.21",
+    "openai": ">=6.0.0",
+    "react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "openai": { "optional": true },
+    "react": { "optional": true }
+  },
+  "devDependencies": {
+    "@sudobility/testomniac_types": "^0.0.21",
+    "@eslint/js": "^9.38.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^16.4.0",
+    "openai": "^6.7.0",
+    "prettier": "^3.7.4",
+    "react": "^19.2.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.0.15",
+    "zustand": "^5.0.0",
+    "@types/react": "^19.2.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:johnqh/testomniac_scanning_service.git"
+  }
+}
