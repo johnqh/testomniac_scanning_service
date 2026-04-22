@@ -23,6 +23,7 @@ import { HOVER_DELAY_MS, POST_ACTION_SETTLE_MS } from "../config/constants";
 import { detectReusableRegions } from "../scanner/component-detector";
 import { decomposeHtml } from "../scanner/html-decomposer";
 import { ReusableElementCache } from "../scanner/reusable-element-cache";
+import { PageCache } from "../scanner/page-cache";
 import { sha256 } from "../browser/page-utils";
 import type { ActionableItem } from "@sudobility/testomniac_types";
 
@@ -43,7 +44,10 @@ export async function runMouseScanning(
     baseUrl: config.baseUrl,
   });
 
-  // Initialize reusable element cache (preloads from API)
+  // Caches — preload from API to avoid redundant network calls
+  const pageCache = new PageCache(config.appId, api);
+  await pageCache.preload();
+
   const reusableCache = new ReusableElementCache(config.appId, api);
   await reusableCache.preload();
 
@@ -58,7 +62,7 @@ export async function runMouseScanning(
   const startOrigin = new URL(config.baseUrl).origin;
 
   // Create initial page record (page state created when navigate action is processed)
-  const initialPage = await api.findOrCreatePage(config.appId, config.baseUrl);
+  const initialPage = await pageCache.findOrCreate(config.baseUrl);
   navigator.markPageAsNavigable(initialPage.id);
 
   // Check if there's already an open navigate action (created by POST /scan)
@@ -106,7 +110,7 @@ export async function runMouseScanning(
         });
 
         const currentUrl = await adapter.getUrl();
-        const pageRecord = await api.findOrCreatePage(config.appId, currentUrl);
+        const pageRecord = await pageCache.findOrCreate(currentUrl);
 
         // Capture page state with HTML decomposition
         const html = await adapter.content();
@@ -277,7 +281,7 @@ export async function runMouseScanning(
           action.id
         );
 
-        // Discover new pages from links (enqueue for later navigation, don't count as "found" yet)
+        // Discover new pages from links (enqueue for later, don't count as "found")
         for (const item of items.filter(i => i.href && i.visible)) {
           const normalized = normalizeHref(item.href!, config.baseUrl);
           if (!normalized) continue;
@@ -286,7 +290,7 @@ export async function runMouseScanning(
           } catch {
             continue;
           }
-          const newPage = await api.findOrCreatePage(config.appId, normalized);
+          const newPage = await pageCache.findOrCreate(normalized);
           await navigator.ensureNavigationActionExists(newPage.id, normalized);
         }
       } else {
@@ -301,7 +305,6 @@ export async function runMouseScanning(
         let item: ActionableItem | null = null;
         let itemSelector: string | null = null;
         if (action.actionableItemId) {
-          // Get items for the page state to find this item's selector
           const pageStateId =
             action.startingPageStateId ?? stateManager.getCurrentPageStateId();
           if (pageStateId) {
@@ -365,7 +368,7 @@ export async function runMouseScanning(
               await dismissModal(adapter);
             }
 
-            // Check for navigation
+            // Check for navigation — enqueue new page but don't count as "found"
             const afterUrl = await adapter.getUrl();
             if (afterUrl !== currentUrl) {
               try {
@@ -376,15 +379,12 @@ export async function runMouseScanning(
                     timeout: 30_000,
                   });
                 } else {
-                  const newPage = await api.findOrCreatePage(
-                    config.appId,
-                    afterUrl
-                  );
+                  // Enqueue for later navigation — page state will be created then
+                  const newPage = await pageCache.findOrCreate(afterUrl);
                   await navigator.ensureNavigationActionExists(
                     newPage.id,
                     afterUrl
                   );
-                  events.onPageFound({ url: afterUrl, pageId: newPage.id });
                   await adapter.goto(currentUrl, {
                     waitUntil: "networkidle0",
                     timeout: 30_000,
