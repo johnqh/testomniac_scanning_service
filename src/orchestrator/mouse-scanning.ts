@@ -57,10 +57,9 @@ export async function runMouseScanning(
   });
   const startOrigin = new URL(config.baseUrl).origin;
 
-  // Create initial page and page state
+  // Create initial page record (page state created when navigate action is processed)
   const initialPage = await api.findOrCreatePage(config.appId, config.baseUrl);
   navigator.markPageAsNavigable(initialPage.id);
-  events.onPageFound({ url: config.baseUrl, pageId: initialPage.id });
 
   // Check if there's already an open navigate action (created by POST /scan)
   let action = await api.getNextOpenAction(config.runId, sizeClass);
@@ -108,7 +107,6 @@ export async function runMouseScanning(
 
         const currentUrl = await adapter.getUrl();
         const pageRecord = await api.findOrCreatePage(config.appId, currentUrl);
-        events.onPageFound({ url: currentUrl, pageId: pageRecord.id });
 
         // Capture page state with HTML decomposition
         const html = await adapter.content();
@@ -123,6 +121,11 @@ export async function runMouseScanning(
         );
         if (existing) {
           stateManager.update(existing.id, currentUrl);
+          events.onPageFound({ url: currentUrl, pageId: pageRecord.id });
+          events.onPageStateCreated({
+            pageStateId: existing.id,
+            pageId: pageRecord.id,
+          });
           await api.completeAction(action.id, {});
           action = await api.getNextOpenAction(config.runId, sizeClass);
           continue;
@@ -215,6 +218,7 @@ export async function runMouseScanning(
           contentHtmlElementId: contentElement.id,
         });
         stateManager.update(pageState.id, currentUrl);
+        events.onPageFound({ url: currentUrl, pageId: pageRecord.id });
         events.onPageStateCreated({
           pageStateId: pageState.id,
           pageId: pageRecord.id,
@@ -273,7 +277,7 @@ export async function runMouseScanning(
           action.id
         );
 
-        // Discover new pages from links
+        // Discover new pages from links (enqueue for later navigation, don't count as "found" yet)
         for (const item of items.filter(i => i.href && i.visible)) {
           const normalized = normalizeHref(item.href!, config.baseUrl);
           if (!normalized) continue;
@@ -284,7 +288,6 @@ export async function runMouseScanning(
           }
           const newPage = await api.findOrCreatePage(config.appId, normalized);
           await navigator.ensureNavigationActionExists(newPage.id, normalized);
-          events.onPageFound({ url: normalized, pageId: newPage.id });
         }
       } else {
         // Non-navigate action: click, fill, select, toggle
