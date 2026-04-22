@@ -7,3 +7,12 @@ export {
   checkPostClickState,
   type FunctionalIssue,
 } from "./functional-checker";
+export {
+  detectBrokenLinks,
+  detectVisualIssues,
+  detectContentIssues,
+  detectMediaIssues,
+  type BrokenLinkResult,
+  type MediaIssue,
+} from "./bug-detector";
+export { detectAndHandleModal, dismissModal } from "./modal-handler";

@@ -1,8 +1,19 @@
-import { createHash } from "node:crypto";
 import type { ActionableItem, PageHashes } from "../domain/types";
 
-function sha256(input: string): string {
-  return createHash("sha256").update(input).digest("hex");
+async function sha256(input: string): Promise<string> {
+  // Use Node.js crypto when available, fall back to Web SubtleCrypto
+  if (
+    typeof globalThis.process !== "undefined" &&
+    typeof globalThis.process.versions?.node === "string"
+  ) {
+    const { createHash } = await import("node:crypto");
+    return createHash("sha256").update(input).digest("hex");
+  }
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 export function normalizeHtml(html: string): string {
@@ -18,7 +29,7 @@ export function normalizeHtml(html: string): string {
     .trim();
 }
 
-function extractVisibleText(html: string): string {
+export function extractVisibleText(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -27,14 +38,12 @@ function extractVisibleText(html: string): string {
     .trim();
 }
 
-export function computeHashes(
+export async function computeHashes(
   html: string,
   actionableItems: ActionableItem[]
-): PageHashes {
+): Promise<PageHashes> {
   const normalized = normalizeHtml(html);
   const visibleText = extractVisibleText(html);
-  // Only include VISIBLE items in the actionable hash — this captures
-  // state changes like dropdowns opening, modals appearing, tabs switching
   const visibleKeys = actionableItems
     .filter(i => i.visible)
     .map(i => i.stableKey)
@@ -42,9 +51,9 @@ export function computeHashes(
     .join("|");
 
   return {
-    htmlHash: sha256(html),
-    normalizedHtmlHash: sha256(normalized),
-    textHash: sha256(visibleText),
-    actionableHash: sha256(visibleKeys),
+    htmlHash: await sha256(html),
+    normalizedHtmlHash: await sha256(normalized),
+    textHash: await sha256(visibleText),
+    actionableHash: await sha256(visibleKeys),
   };
 }

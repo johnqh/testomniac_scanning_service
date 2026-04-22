@@ -64,4 +64,10 @@ export interface BrowserAdapter {
     event: "console" | "response",
     handler: (...args: unknown[]) => void
   ): void;
+
+  /** Get the current URL (async — needed by adapters that require async I/O for URL lookup) */
+  getUrl(): Promise<string>;
+
+  /** Submit a text entry by pressing Enter on the focused field */
+  submitTextEntry(selector: string): Promise<void>;
 }
