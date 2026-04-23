@@ -12,12 +12,7 @@ import {
   normalizeHref,
 } from "../scanner/action-classifier";
 import { fillValuePlanner } from "../planners/fill-value-planner";
-import {
-  detectBrokenLinks,
-  detectVisualIssues,
-  detectContentIssues,
-  detectMediaIssues,
-} from "../detectors/bug-detector";
+import { runDetectionRules } from "../detectors/issue-creator";
 import { detectAndHandleModal, dismissModal } from "../detectors/modal-handler";
 import { HOVER_DELAY_MS, POST_ACTION_SETTLE_MS } from "../config/constants";
 import { detectReusableRegions } from "../scanner/component-detector";
@@ -25,7 +20,11 @@ import { decomposeHtml } from "../scanner/html-decomposer";
 import { ReusableElementCache } from "../scanner/reusable-element-cache";
 import { PageCache } from "../scanner/page-cache";
 import { sha256 } from "../browser/page-utils";
-import type { ActionableItem } from "@sudobility/testomniac_types";
+import type {
+  ActionableItem,
+  ActionDefinitionResponse,
+} from "@sudobility/testomniac_types";
+import type { DetectionContext } from "../detectors/detection-rule";
 
 export async function runMouseScanning(
   adapter: BrowserAdapter,
@@ -53,6 +52,9 @@ export async function runMouseScanning(
 
   // Track which reusable elements have been tested to avoid duplicates
   const testedReusableElements = new Set<number>();
+
+  // Track the current action chain for detection context
+  let actionChainStack: ActionDefinitionResponse[] = [];
 
   // Navigate to base URL
   await adapter.goto(config.baseUrl, {
@@ -269,17 +271,41 @@ export async function runMouseScanning(
           });
         }
 
-        // Run bug detection
-        await runBugDetection(
+        // Reset action chain on navigate and push current action
+        actionChainStack = [
+          {
+            id: action.id,
+            appId: config.appId,
+            type: action.type,
+            startingPageStateId: action.startingPageStateId ?? null,
+            targetUrl: action.targetPageId ? currentUrl : null,
+            actionableItemId: action.actionableItemId ?? null,
+            htmlElementId: null,
+            inputValue: null,
+            createdAt: null,
+          },
+        ];
+
+        // Run detection rules
+        const detectionContext: DetectionContext = {
           adapter,
-          currentUrl,
           html,
           visibleText,
-          events,
-          api,
-          config.runId,
-          action.id
-        );
+          pageUrl: currentUrl,
+          pageRecord,
+          pageState,
+          items,
+          appId: config.appId,
+          scanId: config.runId,
+          currentActionChain: actionChainStack,
+        };
+        const detectedIssues = await runDetectionRules(detectionContext, api);
+        for (const issue of detectedIssues) {
+          events.onIssueDetected({
+            type: issue.ruleName,
+            description: issue.observedOutcome,
+          });
+        }
 
         // Discover new pages from links (enqueue for later, don't count as "found")
         for (const item of items.filter(i => i.href && i.visible)) {
@@ -432,75 +458,6 @@ export async function runMouseScanning(
       await api.completeAction(action.id, {});
     }
     action = await api.getNextOpenAction(config.runId, sizeClass);
-  }
-}
-
-async function runBugDetection(
-  adapter: BrowserAdapter,
-  pageUrl: string,
-  html: string,
-  visibleText: string,
-  events: ScanEventHandler,
-  api: ApiClient,
-  scanId: number,
-  actionExecutionId: number
-): Promise<void> {
-  const visualIssues = detectVisualIssues(html);
-  for (const issue of visualIssues) {
-    events.onIssueDetected(issue);
-    await api.createIssue({
-      scanId,
-      actionExecutionId,
-      type: issue.type,
-      description: issue.description,
-      reproductionSteps: [],
-    });
-  }
-
-  const contentIssues = detectContentIssues(visibleText);
-  for (const issue of contentIssues) {
-    events.onIssueDetected(issue);
-    await api.createIssue({
-      scanId,
-      actionExecutionId,
-      type: issue.type,
-      description: issue.description,
-      reproductionSteps: [],
-    });
-  }
-
-  try {
-    const brokenLinks = await detectBrokenLinks(adapter, pageUrl);
-    for (const link of brokenLinks) {
-      const issue = {
-        type: "broken_link",
-        description: `Broken link: ${link.href} (${link.error}) — "${link.text}"`,
-      };
-      events.onIssueDetected(issue);
-      await api.createIssue({
-        scanId,
-        actionExecutionId,
-        ...issue,
-        reproductionSteps: [],
-      });
-    }
-  } catch {
-    // Link checking failed
-  }
-
-  try {
-    const mediaIssues = await detectMediaIssues(adapter);
-    for (const issue of mediaIssues) {
-      events.onIssueDetected(issue);
-      await api.createIssue({
-        scanId,
-        actionExecutionId,
-        ...issue,
-        reproductionSteps: [],
-      });
-    }
-  } catch {
-    // Media detection failed
   }
 }
 

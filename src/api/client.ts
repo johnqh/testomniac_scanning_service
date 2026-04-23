@@ -39,6 +39,9 @@ import type {
   ActionableItem,
   TestCase,
   FormInfo,
+  CreateTestCaseActionRequest,
+  TestCaseActionResponse,
+  FindTestCaseByActionsRequest,
 } from "@sudobility/testomniac_types";
 
 export class ApiClient {
@@ -315,6 +318,28 @@ export class ApiClient {
     return this.get(`/test-cases?appId=${appId}`);
   }
 
+  findTestCaseByActions(
+    appId: number,
+    actionIds: number[]
+  ): Promise<TestCaseResponse | null> {
+    const body: FindTestCaseByActionsRequest = { appId, actionIds };
+    return this.post("/test-cases/find-by-actions", body);
+  }
+
+  // ===========================================================================
+  // Test Case Actions
+  // ===========================================================================
+
+  createTestCaseAction(
+    params: CreateTestCaseActionRequest
+  ): Promise<TestCaseActionResponse> {
+    return this.post("/test-case-actions", params);
+  }
+
+  getTestCaseActions(testCaseId: number): Promise<TestCaseActionResponse[]> {
+    return this.get(`/test-case-actions?testCaseId=${testCaseId}`);
+  }
+
   // ===========================================================================
   // Test Runs
   // ===========================================================================
@@ -340,6 +365,15 @@ export class ApiClient {
 
   getIssuesByRun(runId: number): Promise<IssueResponse[]> {
     return this.get(`/issues?runId=${runId}`);
+  }
+
+  findIssueByRule(
+    testCaseId: number,
+    ruleName: string
+  ): Promise<IssueResponse | null> {
+    return this.get(
+      `/issues/find-by-rule?testCaseId=${testCaseId}&ruleName=${encodeURIComponent(ruleName)}`
+    );
   }
 
   // ===========================================================================

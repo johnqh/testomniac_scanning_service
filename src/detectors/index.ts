@@ -16,3 +16,13 @@ export {
   type MediaIssue,
 } from "./bug-detector";
 export { detectAndHandleModal, dismissModal } from "./modal-handler";
+
+// Detection rules system
+export type {
+  DetectionContext,
+  DetectedIssue,
+  DetectionRule,
+} from "./detection-rule";
+export { describeAction, buildTestCaseDescription } from "./action-description";
+export { runDetectionRules } from "./issue-creator";
+export { getAllDetectionRules } from "./rules";

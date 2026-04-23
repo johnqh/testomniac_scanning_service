@@ -31,12 +31,14 @@ export async function runTestExecutionPhase(
 
       if (!result.passed && result.error) {
         await api.createIssue({
+          appId: config.appId,
           scanId: config.runId,
           testCaseId: tc.id,
           testRunId: testRun.id,
-          type: "test_failure",
+          severity: "bug",
+          ruleName: "test_failure",
+          title: `Test failure: ${tc.name}`,
           description: result.error,
-          reproductionSteps: [],
         });
         events.onIssueDetected({
           type: "test_failure",
