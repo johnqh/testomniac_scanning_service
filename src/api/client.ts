@@ -27,7 +27,6 @@ import type {
   InputValueResponse,
   InsertFormRequest,
   FormResponse,
-  InsertTestCaseRequest,
   TestCaseResponse,
   CreateTestRunRequest,
   TestRunResponse,
@@ -42,6 +41,7 @@ import type {
   PageHashes,
   ActionableItem,
   TestCase,
+  LegacyTestCase,
   FormInfo,
   CreateTestCaseActionRequest,
   TestCaseActionResponse,
@@ -359,8 +359,11 @@ export class ApiClient {
   // Test Cases
   // ===========================================================================
 
-  insertTestCase(appId: number, testCase: TestCase): Promise<TestCaseResponse> {
-    const body: InsertTestCaseRequest = { appId, testCase };
+  insertTestCase(
+    appId: number,
+    testCase: TestCase | LegacyTestCase
+  ): Promise<TestCaseResponse> {
+    const body = { appId, testCase };
     return this.post("/test-cases", body);
   }
 

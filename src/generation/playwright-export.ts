@@ -1,20 +1,20 @@
-import type { TestAction } from "../domain/types";
+import type { TestCase } from "../domain/types";
 
-export interface PlaywrightTestInput {
-  testName: string;
-  baseUrl: string;
-  steps: TestAction[];
-}
-
-export function exportAsPlaywrightScript(input: PlaywrightTestInput): string {
+export function exportAsPlaywrightScript(testCase: TestCase): string {
   const lines: string[] = [
     "import { test, expect } from '@playwright/test';",
     "",
-    `test('${escapeSingleQuotes(input.testName)}', async ({ page }) => {`,
+    `test('${escapeSingleQuotes(testCase.name)}', async ({ page }) => {`,
   ];
 
-  for (const step of input.steps) {
-    lines.push(`  ${step.playwrightCode}`);
+  for (const step of testCase.steps) {
+    // Emit the action
+    lines.push(`  ${step.action.playwrightCode}`);
+
+    // Emit expectations
+    for (const exp of step.expectations) {
+      lines.push(`  ${exp.playwrightCode}`);
+    }
   }
 
   lines.push("});");
