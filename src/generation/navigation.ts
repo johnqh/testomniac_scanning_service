@@ -1,5 +1,5 @@
 import type { SizeClass } from "../domain/types";
-import type { GeneratedTestCase } from "./render";
+import type { LegacyGeneratedTestCase } from "./render";
 import { assignSuiteTags } from "./suite-tagger";
 
 interface NavigationInput {
@@ -14,7 +14,7 @@ interface NavigationInput {
 
 export function generateNavigationTest(
   input: NavigationInput
-): GeneratedTestCase {
+): LegacyGeneratedTestCase {
   const pattern = new URL(input.toUrl).pathname;
   return {
     testCase: {

@@ -1,4 +1,4 @@
-import type { TestAction, Screen } from "../domain/types";
+import type { LegacyTestAction, Screen } from "../domain/types";
 
 export type ScanPhase =
   | "mouse_scanning"
@@ -51,7 +51,7 @@ export interface ScanEventHandler {
 
 export interface TestExecutor {
   executeTestCase(
-    actions: TestAction[],
+    actions: LegacyTestAction[],
     screen: Screen
   ): Promise<{ passed: boolean; error?: string; durationMs: number }>;
 }

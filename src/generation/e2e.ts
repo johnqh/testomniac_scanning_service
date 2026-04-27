@@ -1,5 +1,5 @@
-import type { TestAction, SizeClass } from "../domain/types";
-import type { GeneratedTestCase } from "./render";
+import type { LegacyTestAction, SizeClass } from "../domain/types";
+import type { LegacyGeneratedTestCase } from "./render";
 import { assignSuiteTags } from "./suite-tagger";
 
 interface E2EStep {
@@ -13,8 +13,8 @@ interface E2EInput {
   steps: E2EStep[];
 }
 
-export function generateE2ETest(input: E2EInput): GeneratedTestCase {
-  const actions: TestAction[] = [
+export function generateE2ETest(input: E2EInput): LegacyGeneratedTestCase {
+  const actions: LegacyTestAction[] = [
     { action: "navigate", url: input.steps[0].url },
     { action: "waitForLoad" },
   ];

@@ -1,5 +1,5 @@
-import type { TestAction, SizeClass, FormField } from "../domain/types";
-import type { GeneratedTestCase } from "./render";
+import type { LegacyTestAction, SizeClass, FormField } from "../domain/types";
+import type { LegacyGeneratedTestCase } from "./render";
 import { assignSuiteTags } from "./suite-tagger";
 
 interface FormNegativeInput {
@@ -14,12 +14,12 @@ interface FormNegativeInput {
 
 export function generateFormNegativeTests(
   input: FormNegativeInput
-): GeneratedTestCase[] {
+): LegacyGeneratedTestCase[] {
   const requiredFields = input.fields.filter(f => f.required);
   if (requiredFields.length === 0) return [];
 
   return requiredFields.map(skippedField => {
-    const actions: TestAction[] = [
+    const actions: LegacyTestAction[] = [
       { action: "navigate", url: input.url },
       { action: "waitForLoad" },
     ];

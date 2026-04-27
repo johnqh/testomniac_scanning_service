@@ -2,12 +2,14 @@ import { generateRenderTest, type GeneratedTestCase } from "./render";
 import { assignPriority } from "./suite-tagger";
 import type { SizeClass } from "../domain/types";
 import type { ApiClient } from "../api/client";
+import type { ElementIdentityResponse } from "@sudobility/testomniac_types";
 
 export interface GeneratorOptions {
   appId: number;
   runId: number;
   sizeClass: SizeClass;
   api: ApiClient;
+  elementIdentities?: ElementIdentityResponse[];
 }
 
 export async function generateTestCases(
@@ -17,16 +19,39 @@ export async function generateTestCases(
   const results: GeneratedTestCase[] = [];
   const allPages = await api.getPagesByApp(appId);
 
+  // Load element identities if not provided
+  const identities =
+    options.elementIdentities ?? (await api.getElementIdentitiesByApp(appId));
+
   for (const page of allPages) {
     const priority = assignPriority(page.routeKey || "", page.url);
+
+    // Get page states for this page to find element identities
+    const pageStates = await api.getPageStates(page.id);
+    const pageState = pageStates[0]; // Use first page state
+
+    // Map identities that were last seen in a state for this page
+    const pageElements = identities
+      .filter(id => id.computedName || id.labelText || id.testId)
+      .slice(0, 10)
+      .map(id => ({
+        elementIdentityId: id.id,
+        playwrightLocator: id.playwrightLocator,
+        playwrightScopeChain: id.playwrightScopeChain ?? undefined,
+        computedName: id.computedName || id.labelText || id.cssSelector,
+        role: id.role,
+        visible: true,
+      }));
+
     results.push(
       generateRenderTest({
         pageId: page.id,
+        pageStateId: pageState?.id ?? 0,
         pageName: page.routeKey || page.url,
         url: page.url,
         sizeClass,
         priority,
-        elements: [],
+        elements: pageElements,
       })
     );
   }

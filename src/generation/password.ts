@@ -1,5 +1,5 @@
-import type { TestAction, SizeClass } from "../domain/types";
-import type { GeneratedTestCase } from "./render";
+import type { LegacyTestAction, SizeClass } from "../domain/types";
+import type { LegacyGeneratedTestCase } from "./render";
 
 export interface PasswordTestCase {
   password: string;
@@ -20,7 +20,7 @@ interface PasswordTestInput {
 
 export function generatePasswordTests(
   input: PasswordTestInput
-): GeneratedTestCase[] {
+): LegacyGeneratedTestCase[] {
   const sorted = [...input.passwordCases].sort((a, b) => {
     if (a.shouldFail && !b.shouldFail) return -1;
     if (!a.shouldFail && b.shouldFail) return 1;
@@ -28,7 +28,7 @@ export function generatePasswordTests(
   });
 
   return sorted.map(pc => {
-    const actions: TestAction[] = [
+    const actions: LegacyTestAction[] = [
       { action: "navigate", url: input.url },
       { action: "waitForLoad" },
       {

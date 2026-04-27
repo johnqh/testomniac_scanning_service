@@ -1,5 +1,5 @@
-import type { TestAction, SizeClass } from "../domain/types";
-import type { GeneratedTestCase } from "./render";
+import type { LegacyTestAction, SizeClass } from "../domain/types";
+import type { LegacyGeneratedTestCase } from "./render";
 import { assignSuiteTags } from "./suite-tagger";
 
 interface FormInput {
@@ -14,8 +14,8 @@ interface FormInput {
   submitSelector?: string;
 }
 
-export function generateFormTest(input: FormInput): GeneratedTestCase {
-  const actions: TestAction[] = [
+export function generateFormTest(input: FormInput): LegacyGeneratedTestCase {
+  const actions: LegacyTestAction[] = [
     { action: "navigate", url: input.url },
     { action: "waitForLoad" },
   ];

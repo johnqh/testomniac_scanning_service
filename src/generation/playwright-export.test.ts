@@ -1,106 +1,116 @@
 import { describe, it, expect } from "vitest";
 import { exportAsPlaywrightScript } from "./playwright-export";
+import { PlaywrightAction } from "../domain/types";
+import type { TestAction } from "../domain/types";
 
 describe("exportAsPlaywrightScript", () => {
   it("generates a valid Playwright test script for a render test", () => {
+    const steps: TestAction[] = [
+      {
+        actionType: PlaywrightAction.Goto,
+        url: "https://example.com",
+        playwrightCode: "await page.goto('https://example.com');",
+        description: "Navigate to https://example.com",
+      },
+      {
+        actionType: PlaywrightAction.AssertVisible,
+        elementIdentityId: 5,
+        playwrightCode:
+          "await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();",
+        description: "Assert 'Welcome' heading is visible",
+      },
+      {
+        actionType: PlaywrightAction.Screenshot,
+        value: "render-home",
+        playwrightCode:
+          "await page.screenshot({ path: 'render-home.png', fullPage: true });",
+        description: "Take screenshot 'render-home'",
+      },
+    ];
+
     const script = exportAsPlaywrightScript({
       testName: "Render — Home Page",
       baseUrl: "https://example.com",
-      steps: [
-        { action: "navigate", url: "https://example.com" },
-        {
-          action: "assertVisible",
-          playwrightLocator: "getByRole('heading', { name: 'Welcome' })",
-        },
-        { action: "screenshot", label: "render-home" },
-      ],
+      steps,
     });
+
     expect(script).toContain("import { test, expect } from '@playwright/test'");
     expect(script).toContain("test('Render — Home Page'");
-    expect(script).toContain("await page.goto('https://example.com')");
+    expect(script).toContain("await page.goto('https://example.com');");
     expect(script).toContain(
-      "await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible()"
+      "await expect(page.getByRole('heading', { name: 'Welcome' })).toBeVisible();"
     );
     expect(script).toContain("await page.screenshot(");
   });
 
-  it("generates fill steps with Playwright locators", () => {
+  it("generates fill and click steps", () => {
+    const steps: TestAction[] = [
+      {
+        actionType: PlaywrightAction.Goto,
+        url: "https://example.com/login",
+        playwrightCode: "await page.goto('https://example.com/login');",
+        description: "Navigate to https://example.com/login",
+      },
+      {
+        actionType: PlaywrightAction.Fill,
+        elementIdentityId: 15,
+        value: "jane@example.com",
+        playwrightCode:
+          "await page.getByLabel('Email').fill('jane@example.com');",
+        description: "Type 'jane@example.com' in 'Email' textbox",
+      },
+      {
+        actionType: PlaywrightAction.Fill,
+        elementIdentityId: 16,
+        value: "secret123",
+        playwrightCode: "await page.getByLabel('Password').fill('secret123');",
+        description: "Type 'secret123' in 'Password' textbox",
+      },
+      {
+        actionType: PlaywrightAction.Click,
+        elementIdentityId: 42,
+        playwrightCode:
+          "await page.getByRole('button', { name: 'Sign In' }).click();",
+        description: "Click 'Sign In' button",
+      },
+    ];
+
     const script = exportAsPlaywrightScript({
       testName: "Login flow",
       baseUrl: "https://example.com/login",
-      steps: [
-        { action: "navigate", url: "https://example.com/login" },
-        {
-          action: "fill",
-          playwrightLocator: "getByLabel('Email')",
-          value: "jane@example.com",
-        },
-        {
-          action: "fill",
-          playwrightLocator: "getByLabel('Password')",
-          value: "secret123",
-        },
-        {
-          action: "click",
-          playwrightLocator: "getByRole('button', { name: 'Sign In' })",
-        },
-      ],
+      steps,
     });
+
     expect(script).toContain(
-      "await page.getByLabel('Email').fill('jane@example.com')"
+      "await page.getByLabel('Email').fill('jane@example.com');"
     );
     expect(script).toContain(
-      "await page.getByLabel('Password').fill('secret123')"
+      "await page.getByLabel('Password').fill('secret123');"
     );
     expect(script).toContain(
-      "await page.getByRole('button', { name: 'Sign In' }).click()"
+      "await page.getByRole('button', { name: 'Sign In' }).click();"
     );
   });
 
-  it("handles scoped locators", () => {
+  it("handles scoped locators in playwrightCode", () => {
+    const steps: TestAction[] = [
+      {
+        actionType: PlaywrightAction.Check,
+        elementIdentityId: 31,
+        playwrightCode:
+          "await page.getByRole('group', { name: 'Shipping' }).getByRole('radio', { name: 'Express' }).check();",
+        description: "Check 'Express' radio in 'Shipping' group",
+      },
+    ];
+
     const script = exportAsPlaywrightScript({
       testName: "Radio selection",
       baseUrl: "https://example.com",
-      steps: [
-        { action: "navigate", url: "https://example.com" },
-        {
-          action: "click",
-          playwrightLocator: "getByRole('radio', { name: 'Express' })",
-          playwrightScopeChain: "getByRole('group', { name: 'Shipping' })",
-        },
-      ],
+      steps,
     });
-    expect(script).toContain(
-      "await page.getByRole('group', { name: 'Shipping' }).getByRole('radio', { name: 'Express' }).click()"
-    );
-  });
 
-  it("generates waitForLoad steps", () => {
-    const script = exportAsPlaywrightScript({
-      testName: "Load test",
-      baseUrl: "https://example.com",
-      steps: [
-        { action: "navigate", url: "https://example.com" },
-        { action: "waitForLoad" },
-      ],
-    });
-    expect(script).toContain("await page.waitForLoadState('networkidle')");
-  });
-
-  it("generates select steps", () => {
-    const script = exportAsPlaywrightScript({
-      testName: "Select test",
-      baseUrl: "https://example.com",
-      steps: [
-        {
-          action: "select",
-          playwrightLocator: "getByLabel('Country')",
-          value: "US",
-        },
-      ],
-    });
     expect(script).toContain(
-      "await page.getByLabel('Country').selectOption('US')"
+      "await page.getByRole('group', { name: 'Shipping' }).getByRole('radio', { name: 'Express' }).check();"
     );
   });
 });

@@ -1,5 +1,5 @@
-import type { TestAction, SizeClass } from "../domain/types";
-import type { GeneratedTestCase } from "./render";
+import type { LegacyTestAction, SizeClass } from "../domain/types";
+import type { LegacyGeneratedTestCase } from "./render";
 import { assignSuiteTags } from "./suite-tagger";
 
 interface InteractionInput {
@@ -14,8 +14,8 @@ interface InteractionInput {
 
 export function generateInteractionTest(
   input: InteractionInput
-): GeneratedTestCase {
-  const actions: TestAction[] = [
+): LegacyGeneratedTestCase {
+  const actions: LegacyTestAction[] = [
     { action: "navigate", url: input.url },
     { action: "waitForLoad" },
   ];

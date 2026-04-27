@@ -5,6 +5,7 @@ export {
   ActionStatus,
   IssueType,
   TestType,
+  PlaywrightAction,
   DESKTOP_SCREENS,
   MOBILE_SCREENS,
 } from "@sudobility/testomniac_types";
@@ -17,6 +18,7 @@ export type {
   PageHashes,
   NetworkLogEntry,
   TestAction,
+  LegacyTestAction,
   TestCase,
   Credentials,
 } from "@sudobility/testomniac_types";
