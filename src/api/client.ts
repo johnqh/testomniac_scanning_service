@@ -46,6 +46,9 @@ import type {
   CreateTestCaseActionRequest,
   TestCaseActionResponse,
   FindTestCaseByActionsRequest,
+  CreateElementIdentityRequest,
+  UpdateElementIdentityRequest,
+  ElementIdentityResponse,
 } from "@sudobility/testomniac_types";
 
 export class ApiClient {
@@ -207,6 +210,16 @@ export class ApiClient {
     return this.get(`/actionable-items?pageStateId=${pageStateId}`);
   }
 
+  getItemsByHtmlElement(
+    htmlElementId: number
+  ): Promise<ActionableItemResponse[]> {
+    return this.get(`/actionable-items?htmlElementId=${htmlElementId}`);
+  }
+
+  getActionableItem(id: number): Promise<ActionableItemResponse | null> {
+    return this.get(`/actionable-items/${id}`);
+  }
+
   // ===========================================================================
   // Action Definitions (app-level)
   // ===========================================================================
@@ -266,14 +279,16 @@ export class ApiClient {
     return this.patch(`/action-executions/${executionId}/complete`, params);
   }
 
-  getOpenActionCount(runId: number, sizeClass: string): Promise<number> {
+  getOpenExecutionCount(scanId: number): Promise<number> {
     return this.get<{ count: number }>(
-      `/actions/open-count?runId=${runId}&sizeClass=${sizeClass}`
-    ).then(r => r.count);
+      `/action-executions/open-count?scanId=${scanId}`
+    ).then((r: any) => r.count);
   }
 
-  getActionChain(actionId: number): Promise<ActionResponse[]> {
-    return this.get(`/actions/chain/${actionId}`);
+  getExecutionChain(
+    executionId: number
+  ): Promise<ActionExecutionResponse[]> {
+    return this.get(`/action-executions/chain/${executionId}`);
   }
 
   // ===========================================================================
@@ -400,8 +415,12 @@ export class ApiClient {
     return this.post("/issues", params);
   }
 
-  getIssuesByRun(runId: number): Promise<IssueResponse[]> {
-    return this.get(`/issues?runId=${runId}`);
+  getIssuesByScan(scanId: number): Promise<IssueResponse[]> {
+    return this.get(`/issues?scanId=${scanId}`);
+  }
+
+  getIssuesByApp(appId: number): Promise<IssueResponse[]> {
+    return this.get(`/issues?appId=${appId}`);
   }
 
   findIssueByRule(
@@ -468,6 +487,28 @@ export class ApiClient {
       pageStateId,
       reusableHtmlElementIds,
     });
+  }
+  // ===========================================================================
+  // Element Identities
+  // ===========================================================================
+
+  findOrCreateElementIdentity(
+    params: CreateElementIdentityRequest
+  ): Promise<ElementIdentityResponse> {
+    return this.post("/element-identities", params);
+  }
+
+  getElementIdentitiesByApp(
+    appId: number
+  ): Promise<ElementIdentityResponse[]> {
+    return this.get(`/element-identities?appId=${appId}`);
+  }
+
+  updateElementIdentity(
+    id: number,
+    params: UpdateElementIdentityRequest
+  ): Promise<void> {
+    return this.patch(`/element-identities/${id}`, params);
   }
 }
 
