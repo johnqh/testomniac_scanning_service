@@ -39,6 +39,7 @@ import type {
   ReusableHtmlElementResponse,
   FindOrCreateReusableHtmlElementRequest,
   PageHashes,
+  DecomposedPageHashes,
   ActionableItem,
   TestCase,
   LegacyTestCase,
@@ -492,6 +493,25 @@ export class ApiClient {
       reusableHtmlElementIds,
     });
   }
+  // ===========================================================================
+  // Page State — Decomposed Matching
+  // ===========================================================================
+
+  findMatchingPageStateDecomposed(
+    pageId: number,
+    decomposedHashes: DecomposedPageHashes,
+    sizeClass: string
+  ): Promise<PageStateResponse | null> {
+    const qs = new URLSearchParams({
+      pageId: String(pageId),
+      sizeClass,
+      fixedBodyHash: decomposedHashes.fixedBodyHash,
+      reusableElementsHash: decomposedHashes.reusableElementsHash,
+      patternsHash: decomposedHashes.patternsHash,
+    });
+    return this.get(`/page-states/match-decomposed?${qs}`);
+  }
+
   // ===========================================================================
   // Page State Patterns
   // ===========================================================================

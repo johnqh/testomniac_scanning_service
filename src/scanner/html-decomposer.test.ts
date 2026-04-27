@@ -1,16 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { getBody, getContentBody, getFixedBody, decomposeHtml } from "./html-decomposer";
+import {
+  getBody,
+  getContentBody,
+  getFixedBody,
+  decomposeHtml,
+} from "./html-decomposer";
 import type { DetectedReusableRegion } from "./component-detector";
 import type { PatternInstance } from "@sudobility/testomniac_types";
 
 describe("getBody", () => {
   it("extracts body content from full HTML", () => {
-    const html = "<html><head><title>Test</title></head><body><h1>Hello</h1></body></html>";
+    const html =
+      "<html><head><title>Test</title></head><body><h1>Hello</h1></body></html>";
     expect(getBody(html)).toBe("<h1>Hello</h1>");
   });
 
   it("handles body with attributes", () => {
-    const html = '<html><body class="main" id="app"><p>Content</p></body></html>';
+    const html =
+      '<html><body class="main" id="app"><p>Content</p></body></html>';
     expect(getBody(html)).toBe("<p>Content</p>");
   });
 
@@ -20,27 +27,46 @@ describe("getBody", () => {
   });
 
   it("handles multiline body", () => {
-    const html = "<html><body>\n  <div>\n    <p>Test</p>\n  </div>\n</body></html>";
+    const html =
+      "<html><body>\n  <div>\n    <p>Test</p>\n  </div>\n</body></html>";
     expect(getBody(html)).toContain("<p>Test</p>");
   });
 });
 
 describe("getContentBody", () => {
   it("strips reusable regions from body", () => {
-    const body = "<header><nav>Menu</nav></header><main>Content</main><footer>Foot</footer>";
+    const body =
+      "<header><nav>Menu</nav></header><main>Content</main><footer>Foot</footer>";
     const regions: DetectedReusableRegion[] = [
-      { type: "topMenu", selector: "header", outerHtml: "<header><nav>Menu</nav></header>", hash: "abc" },
-      { type: "footer", selector: "footer", outerHtml: "<footer>Foot</footer>", hash: "def" },
+      {
+        type: "topMenu",
+        selector: "header",
+        outerHtml: "<header><nav>Menu</nav></header>",
+        hash: "abc",
+      },
+      {
+        type: "footer",
+        selector: "footer",
+        outerHtml: "<footer>Foot</footer>",
+        hash: "def",
+      },
     ];
     const { contentBody, reusableElements } = getContentBody(body, regions);
-    expect(contentBody).toBe("<!-- reusable: topMenu --><main>Content</main><!-- reusable: footer -->");
+    expect(contentBody).toBe(
+      "<!-- reusable: topMenu --><main>Content</main><!-- reusable: footer -->"
+    );
     expect(reusableElements).toHaveLength(2);
   });
 
   it("skips regions not found in body", () => {
     const body = "<main>Content</main>";
     const regions: DetectedReusableRegion[] = [
-      { type: "footer", selector: "footer", outerHtml: "<footer>Missing</footer>", hash: "xyz" },
+      {
+        type: "footer",
+        selector: "footer",
+        outerHtml: "<footer>Missing</footer>",
+        hash: "xyz",
+      },
     ];
     const { contentBody, reusableElements } = getContentBody(body, regions);
     expect(contentBody).toBe("<main>Content</main>");
@@ -57,13 +83,26 @@ describe("getContentBody", () => {
 
 describe("getFixedBody", () => {
   it("strips pattern instances from content body", () => {
-    const contentBody = '<main><div class="card">Card 1</div><p>Text</p><div class="card">Card 2</div></main>';
+    const contentBody =
+      '<main><div class="card">Card 1</div><p>Text</p><div class="card">Card 2</div></main>';
     const instances: PatternInstance[] = [
-      { type: "card", selector: ".card", outerHtml: '<div class="card">Card 1</div>', hash: "c1" },
-      { type: "card", selector: ".card", outerHtml: '<div class="card">Card 2</div>', hash: "c2" },
+      {
+        type: "card",
+        selector: ".card",
+        outerHtml: '<div class="card">Card 1</div>',
+        hash: "c1",
+      },
+      {
+        type: "card",
+        selector: ".card",
+        outerHtml: '<div class="card">Card 2</div>',
+        hash: "c2",
+      },
     ];
     const { fixedBody, patterns } = getFixedBody(contentBody, instances);
-    expect(fixedBody).toBe("<main><!-- pattern: card --><p>Text</p><!-- pattern: card --></main>");
+    expect(fixedBody).toBe(
+      "<main><!-- pattern: card --><p>Text</p><!-- pattern: card --></main>"
+    );
     expect(patterns).toHaveLength(2);
   });
 
@@ -79,7 +118,12 @@ describe("decomposeHtml (backward compat)", () => {
   it("wraps getContentBody", () => {
     const body = "<header>H</header><main>M</main>";
     const regions: DetectedReusableRegion[] = [
-      { type: "topMenu", selector: "header", outerHtml: "<header>H</header>", hash: "h" },
+      {
+        type: "topMenu",
+        selector: "header",
+        outerHtml: "<header>H</header>",
+        hash: "h",
+      },
     ];
     const result = decomposeHtml(body, regions);
     expect(result.bodyHtml).toBe(body);

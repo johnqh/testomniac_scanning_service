@@ -2,7 +2,12 @@ import type { BrowserAdapter } from "../adapter";
 import type { ApiClient } from "../api/client";
 import type { ScanConfig, ScanEventHandler } from "./types";
 import { extractActionableItems } from "../extractors";
-import { computeHashes, extractVisibleText } from "../browser/page-utils";
+import {
+  computeHashes,
+  computeDecomposedHashes,
+  extractVisibleText,
+  sha256,
+} from "../browser/page-utils";
 import { LoopGuard } from "../scanner/loop-guard";
 import { StateManager } from "../scanner/state-manager";
 import { Navigator } from "../scanner/navigator";
@@ -16,11 +21,14 @@ import { runDetectionRules } from "../detectors/issue-creator";
 import { detectAndHandleModal, dismissModal } from "../detectors/modal-handler";
 import { HOVER_DELAY_MS, POST_ACTION_SETTLE_MS } from "../config/constants";
 import { detectReusableRegions } from "../scanner/component-detector";
-import { detectPatterns } from "../scanner/pattern-detector";
-import { decomposeHtml } from "../scanner/html-decomposer";
+import { detectPatternsWithInstances } from "../scanner/pattern-detector";
+import {
+  getBody,
+  getContentBody,
+  getFixedBody,
+} from "../scanner/html-decomposer";
 import { ReusableElementCache } from "../scanner/reusable-element-cache";
 import { PageCache } from "../scanner/page-cache";
-import { sha256 } from "../browser/page-utils";
 import type {
   ActionableItem,
   ActionDefinitionResponse,
@@ -137,26 +145,13 @@ export async function runMouseScanning(
         const afterUrl = await adapter.getUrl();
         const pageRecord = await pageCache.findOrCreate(afterUrl);
 
-        // Capture page state with HTML decomposition
+        // Capture page state with decomposed HTML pipeline
         const html = await adapter.content();
-        console.log(`[mouse-scanning] HTML length: ${html.length}`);
+        const body = getBody(html);
         const items = await extractActionableItems(adapter);
-        console.log(
-          `[mouse-scanning] Extracted ${items.length} items (${items.filter(i => i.visible).length} visible)`
-        );
         const visibleText = extractVisibleText(html);
-        const hashes = await computeHashes(html, items);
 
-        const existing = await api.findMatchingPageState(
-          pageRecord.id,
-          hashes,
-          sizeClass
-        );
-
-        // If page state already exists, reuse it but still create actions for this scan
-        let pageState = existing;
-
-        // Detect reusable regions and decompose HTML
+        // Detect reusable regions (browser-based)
         const reusableRegions = await detectReusableRegions(adapter);
         const resolvedReusableElements: Array<{
           type: string;
@@ -176,15 +171,52 @@ export async function runMouseScanning(
           });
         }
 
-        const { contentHtml } = decomposeHtml(html, reusableRegions);
+        // Decompose: body → contentBody → fixedBody
+        const { contentBody, reusableElements } = getContentBody(
+          body,
+          reusableRegions
+        );
+        const patternResults = await detectPatternsWithInstances(adapter);
+        const allPatternInstances = patternResults.flatMap(p => p.instances);
+        const { fixedBody } = getFixedBody(contentBody, allPatternInstances);
 
-        // Create html elements for body and content
+        // Compute both legacy and decomposed hashes
+        const hashes = await computeHashes(html, items);
+        const decomposedHashes = await computeDecomposedHashes(
+          fixedBody,
+          reusableElements,
+          patternResults
+        );
+        hashes.fixedBodyHash = decomposedHashes.fixedBodyHash;
+        hashes.reusableElementsHash = decomposedHashes.reusableElementsHash;
+        hashes.patternsHash = decomposedHashes.patternsHash;
+
+        // Match: try decomposed hashes first, fall back to legacy
+        let pageState = await api.findMatchingPageStateDecomposed(
+          pageRecord.id,
+          decomposedHashes,
+          sizeClass
+        );
+        if (!pageState) {
+          pageState = await api.findMatchingPageState(
+            pageRecord.id,
+            hashes,
+            sizeClass
+          );
+        }
+
+        // Create html elements for body, content, and fixed body
         const bodyHash = await sha256(html);
-        const contentHash = await sha256(contentHtml);
+        const contentHash = await sha256(contentBody);
+        const fixedBodyHash = await sha256(fixedBody);
         const bodyElement = await api.findOrCreateHtmlElement(html, bodyHash);
         const contentElement = await api.findOrCreateHtmlElement(
-          contentHtml,
+          contentBody,
           contentHash
+        );
+        const fixedBodyElement = await api.findOrCreateHtmlElement(
+          fixedBody,
+          fixedBodyHash
         );
 
         // Tag actionable items with their containing reusable element
@@ -236,7 +268,6 @@ export async function runMouseScanning(
         await adapter.screenshot({ type: "jpeg", quality: 72 });
 
         if (!pageState) {
-          // Create new page state only if no existing match
           pageState = await api.createPageState({
             pageId: pageRecord.id,
             sizeClass,
@@ -244,6 +275,7 @@ export async function runMouseScanning(
             contentText: visibleText.slice(0, 5000),
             bodyHtmlElementId: bodyElement.id,
             contentHtmlElementId: contentElement.id,
+            fixedBodyHtmlElementId: fixedBodyElement.id,
           });
         }
         stateManager.update(pageState.id, currentUrl);
@@ -259,10 +291,14 @@ export async function runMouseScanning(
           await api.linkPageStateReusableElements(pageState.id, reusableIds);
         }
 
-        // Detect UI patterns (cards, tables, modals, etc.)
-        const patterns = await detectPatterns(adapter);
-        if (patterns.length > 0) {
-          await api.insertPageStatePatterns(pageState.id, patterns);
+        // Store pattern summaries
+        const patternSummaries = patternResults.map(p => ({
+          type: p.type,
+          selector: p.selector,
+          count: p.count,
+        }));
+        if (patternSummaries.length > 0) {
+          await api.insertPageStatePatterns(pageState.id, patternSummaries);
         }
 
         // Insert actionable items and capture their DB IDs
@@ -558,8 +594,44 @@ export async function runMouseScanning(
               await dismissModal(adapter);
             }
 
-            // Check for navigation — enqueue new page but don't count as "found"
+            // After-action page state matching
             const afterUrl = await adapter.getUrl();
+            try {
+              const afterHtml = await adapter.content();
+              const afterBody = getBody(afterHtml);
+              const afterRegions = await detectReusableRegions(adapter);
+              const {
+                contentBody: afterContentBody,
+                reusableElements: afterReusables,
+              } = getContentBody(afterBody, afterRegions);
+              const afterPatternResults =
+                await detectPatternsWithInstances(adapter);
+              const afterInstances = afterPatternResults.flatMap(
+                p => p.instances
+              );
+              const { fixedBody: afterFixedBody } = getFixedBody(
+                afterContentBody,
+                afterInstances
+              );
+              const afterDecomposed = await computeDecomposedHashes(
+                afterFixedBody,
+                afterReusables,
+                afterPatternResults
+              );
+              const afterPage = await pageCache.findOrCreate(afterUrl);
+              const matchingState = await api.findMatchingPageStateDecomposed(
+                afterPage.id,
+                afterDecomposed,
+                sizeClass
+              );
+              if (matchingState) {
+                stateManager.update(matchingState.id, afterUrl);
+              }
+            } catch {
+              // After-action capture failed, continue
+            }
+
+            // Check for navigation — enqueue new page but don't count as "found"
             if (afterUrl !== currentUrl) {
               try {
                 const afterOrigin = new URL(afterUrl).origin;
