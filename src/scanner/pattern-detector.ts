@@ -6,12 +6,7 @@ export const PATTERN_TYPE_SELECTORS: Record<UiPatternType, string[]> = {
   table: ["table:has(thead)", '[role="grid"]', ".data-table", "table:has(th)"],
   form: ['form:not([role="search"])'],
   modal: ['[role="dialog"]', ".modal", "dialog", '[aria-modal="true"]'],
-  toast: [
-    '[role="status"]',
-    ".toast",
-    ".notification",
-    ".snackbar",
-  ],
+  toast: ['[role="status"]', ".toast", ".notification", ".snackbar"],
   alert: [".alert", '[role="alert"]', ".notice"],
   tabs: ['[role="tablist"]', ".nav-tabs", ".tabs"],
   accordion: ["details", ".accordion", "[role='region'][aria-labelledby]"],
