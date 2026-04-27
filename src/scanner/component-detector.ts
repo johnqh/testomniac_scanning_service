@@ -7,9 +7,13 @@ export const COMPONENT_SELECTORS = [
   "nav",
   "header",
   "footer",
+  "aside",
+  "form",
   '[role="navigation"]',
   '[role="banner"]',
   '[role="contentinfo"]',
+  '[role="search"]',
+  '[role="complementary"]',
 ];
 
 export const COMPONENT_TYPE_SELECTORS: Record<HtmlComponentType, string[]> = {
@@ -45,6 +49,69 @@ export const COMPONENT_TYPE_SELECTORS: Record<HtmlComponentType, string[]> = {
     '[data-toggle="offcanvas"]',
     ".drawer",
     ".mobile-nav",
+  ],
+  rightSidebar: [
+    ".sidebar-right",
+    ".right-panel",
+    '[class*="right-sidebar"]',
+    ".aside-content",
+  ],
+  searchBar: [
+    'form[role="search"]',
+    '[aria-label*="search" i]',
+    ".search-form",
+    ".search-bar",
+  ],
+  userMenu: [
+    ".user-menu",
+    ".avatar-menu",
+    '[aria-label*="account" i]',
+    '[aria-label*="profile" i]',
+    ".user-dropdown",
+  ],
+  cookieBanner: [
+    ".cookie-banner",
+    ".cookie-consent",
+    "#cookie-notice",
+    '[class*="cookie"]',
+    '[class*="consent"]',
+    ".gdpr-banner",
+  ],
+  chatWidget: [
+    ".chat-widget",
+    "#intercom-container",
+    ".drift-widget",
+    '[class*="chat-bot"]',
+    "#hubspot-messages-iframe-container",
+  ],
+  socialLinks: [".social-links", '[class*="social-media"]', ".social-icons"],
+  skipNav: [
+    ".skip-nav",
+    ".skip-to-content",
+    'a[href="#main-content"]',
+    'a[href="#content"]',
+    ".skip-link",
+  ],
+  languageSwitcher: [
+    ".language-switcher",
+    ".lang-select",
+    '[class*="locale-switcher"]',
+    '[aria-label*="language" i]',
+    ".language-selector",
+  ],
+  announcementBar: [
+    ".announcement-bar",
+    ".promo-bar",
+    ".top-banner",
+    '[class*="announcement"]',
+    ".site-notice",
+  ],
+  backToTop: [
+    ".back-to-top",
+    "#back-to-top",
+    ".scroll-to-top",
+    '[aria-label*="back to top" i]',
+    '[class*="scroll-top"]',
   ],
 };
 
