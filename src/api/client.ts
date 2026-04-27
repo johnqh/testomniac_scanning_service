@@ -49,6 +49,9 @@ import type {
   CreateElementIdentityRequest,
   UpdateElementIdentityRequest,
   ElementIdentityResponse,
+  InsertPageStatePatternsRequest,
+  PageStatePatternResponse,
+  UiPattern,
 } from "@sudobility/testomniac_types";
 
 export class ApiClient {
@@ -489,6 +492,24 @@ export class ApiClient {
       reusableHtmlElementIds,
     });
   }
+  // ===========================================================================
+  // Page State Patterns
+  // ===========================================================================
+
+  insertPageStatePatterns(
+    pageStateId: number,
+    patterns: UiPattern[]
+  ): Promise<PageStatePatternResponse[]> {
+    const body: InsertPageStatePatternsRequest = { pageStateId, patterns };
+    return this.post("/page-state-patterns", body);
+  }
+
+  getPageStatePatterns(
+    pageStateId: number
+  ): Promise<PageStatePatternResponse[]> {
+    return this.get(`/page-state-patterns?pageStateId=${pageStateId}`);
+  }
+
   // ===========================================================================
   // Element Identities
   // ===========================================================================

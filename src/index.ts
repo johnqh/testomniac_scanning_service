@@ -9,6 +9,7 @@ export * from "./scanner/loop-guard";
 export * from "./scanner/phase-timer";
 export * from "./scanner/email-detector";
 export * from "./scanner/component-detector";
+export * from "./scanner/pattern-detector";
 export * from "./scanner/state-manager";
 export * from "./scanner/scroll-scanner";
 

@@ -16,6 +16,7 @@ import { runDetectionRules } from "../detectors/issue-creator";
 import { detectAndHandleModal, dismissModal } from "../detectors/modal-handler";
 import { HOVER_DELAY_MS, POST_ACTION_SETTLE_MS } from "../config/constants";
 import { detectReusableRegions } from "../scanner/component-detector";
+import { detectPatterns } from "../scanner/pattern-detector";
 import { decomposeHtml } from "../scanner/html-decomposer";
 import { ReusableElementCache } from "../scanner/reusable-element-cache";
 import { PageCache } from "../scanner/page-cache";
@@ -256,6 +257,12 @@ export async function runMouseScanning(
         const reusableIds = resolvedReusableElements.map(r => r.reusableId);
         if (reusableIds.length > 0) {
           await api.linkPageStateReusableElements(pageState.id, reusableIds);
+        }
+
+        // Detect UI patterns (cards, tables, modals, etc.)
+        const patterns = await detectPatterns(adapter);
+        if (patterns.length > 0) {
+          await api.insertPageStatePatterns(pageState.id, patterns);
         }
 
         // Insert actionable items and capture their DB IDs
