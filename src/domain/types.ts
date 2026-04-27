@@ -18,6 +18,8 @@ export type {
   FormField,
   FormInfo,
   PageHashes,
+  DecomposedPageHashes,
+  PatternInstance,
   NetworkLogEntry,
   TestAction,
   LegacyTestAction,

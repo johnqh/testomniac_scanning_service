@@ -1,4 +1,10 @@
-import type { ActionableItem, PageHashes } from "../domain/types";
+import type {
+  ActionableItem,
+  PageHashes,
+  DecomposedPageHashes,
+} from "../domain/types";
+import type { DetectedReusableRegion } from "../scanner/component-detector";
+import type { DetectedPatternWithInstances } from "../scanner/pattern-detector";
 
 export async function sha256(input: string): Promise<string> {
   // Use Node.js crypto when available, fall back to Web SubtleCrypto
@@ -56,4 +62,28 @@ export async function computeHashes(
     textHash: await sha256(visibleText),
     actionableHash: await sha256(visibleKeys),
   };
+}
+
+export async function computeDecomposedHashes(
+  fixedBody: string,
+  reusableElements: DetectedReusableRegion[],
+  patternSummaries: DetectedPatternWithInstances[]
+): Promise<DecomposedPageHashes> {
+  const fixedBodyHash = await sha256(normalizeHtml(fixedBody));
+
+  const reusableKey =
+    reusableElements
+      .map(r => `${r.type}:${r.hash}`)
+      .sort()
+      .join("|") || "none";
+  const reusableElementsHash = await sha256(reusableKey);
+
+  const patternKey =
+    patternSummaries
+      .map(p => `${p.type}:${p.count}`)
+      .sort()
+      .join("|") || "none";
+  const patternsHash = await sha256(patternKey);
+
+  return { fixedBodyHash, reusableElementsHash, patternsHash };
 }

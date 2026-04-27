@@ -1,5 +1,9 @@
 import type { BrowserAdapter } from "../adapter";
-import type { UiPatternType, UiPattern } from "@sudobility/testomniac_types";
+import type {
+  UiPatternType,
+  UiPattern,
+  PatternInstance,
+} from "@sudobility/testomniac_types";
 
 export const PATTERN_TYPE_SELECTORS: Record<UiPatternType, string[]> = {
   card: ["article", ".card", '[class*="card"]', ".product-item", ".post-item"],
@@ -54,26 +58,45 @@ export const PATTERN_TYPE_SELECTORS: Record<UiPatternType, string[]> = {
 };
 
 export interface DetectedPattern extends UiPattern {
-  // UiPattern already has type, selector, count
+  // UiPattern: type, selector, count
 }
 
-export async function detectPatterns(
+export interface DetectedPatternWithInstances {
+  type: UiPatternType;
+  selector: string;
+  count: number;
+  instances: PatternInstance[];
+}
+
+/**
+ * Detect UI patterns with full outerHtml for each instance.
+ * Used for decomposition (stripping patterns from content body).
+ */
+export async function detectPatternsWithInstances(
   adapter: BrowserAdapter
-): Promise<DetectedPattern[]> {
-  const results: DetectedPattern[] = [];
+): Promise<DetectedPatternWithInstances[]> {
+  const results: DetectedPatternWithInstances[] = [];
 
   const patternData = await adapter.evaluate(
     (...args: unknown[]) => {
       const selectorMap = args[0] as Record<string, string[]>;
-      const found: Array<{ type: string; selector: string; count: number }> =
-        [];
+      const found: Array<{
+        type: string;
+        selector: string;
+        count: number;
+        htmls: string[];
+      }> = [];
 
       for (const [type, selectors] of Object.entries(selectorMap)) {
         for (const selector of selectors) {
           try {
             const elements = document.querySelectorAll(selector);
             if (elements.length > 0) {
-              found.push({ type, selector, count: elements.length });
+              const htmls: string[] = [];
+              elements.forEach(el => {
+                htmls.push(el.outerHTML);
+              });
+              found.push({ type, selector, count: elements.length, htmls });
               break; // first matching selector per type
             }
           } catch {
@@ -91,13 +114,35 @@ export async function detectPatterns(
     type: string;
     selector: string;
     count: number;
+    htmls: string[];
   }>) {
     results.push({
       type: item.type as UiPatternType,
       selector: item.selector,
       count: item.count,
+      instances: item.htmls.map(html => ({
+        type: item.type as UiPatternType,
+        selector: item.selector,
+        outerHtml: html,
+        hash: "", // computed later in Node.js
+      })),
     });
   }
 
   return results;
+}
+
+/**
+ * Detect UI patterns (summary only, no outerHtml).
+ * Backward-compatible wrapper.
+ */
+export async function detectPatterns(
+  adapter: BrowserAdapter
+): Promise<DetectedPattern[]> {
+  const withInstances = await detectPatternsWithInstances(adapter);
+  return withInstances.map(p => ({
+    type: p.type,
+    selector: p.selector,
+    count: p.count,
+  }));
 }
