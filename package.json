@@ -1,5 +1,5 @@
 {
-  "name": "@sudobility/testomniac_scanning_service",
+  "name": "@sudobility/testomniac_runner_service",
   "version": "0.1.24",
   "description": "Shared scanning logic for Testomniac scanner and Chrome extension",
   "type": "module",
@@ -72,6 +72,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:johnqh/testomniac_scanning_service.git"
+    "url": "git@github.com:johnqh/testomniac_runner_service.git"
   }
 }

@@ -1,5 +1,5 @@
 ---
-# CI/CD workflow for testomniac_scanning_service
+# CI/CD workflow for testomniac_runner_service
 # Automatically publishes to NPM when NPM_TOKEN is configured
 
 name: CI/CD

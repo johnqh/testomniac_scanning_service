@@ -1,4 +1,4 @@
-# testomniac_scanning_service
+# testomniac_runner_service
 
 To install dependencies:
 

@@ -2,7 +2,7 @@
 
 Shared TypeScript library containing all core scanning business logic, browser abstraction, extractors, planners, detectors, AI analysis, test generation, scan orchestration, and API client for the Testomniac testing platform.
 
-**Package**: `@sudobility/testomniac_scanning_service` v0.1.1 (published to npm, public)
+**Package**: `@sudobility/testomniac_runner_service` v0.1.1 (published to npm, public)
 
 ## Tech Stack
 
@@ -112,7 +112,7 @@ bun run verify       # typecheck + lint + test + build (run before publish)
 
 ## Main Entry Point: `runScan()`
 
-The orchestrator is the primary consumer API. Both `testomniac_scanner` and `testomniac_extension` call it:
+The orchestrator is the primary consumer API. Both `testomniac_runner` and `testomniac_extension` call it:
 
 ```typescript
 runScan(
@@ -219,7 +219,7 @@ interface BrowserAdapter {
 
 **Implementations**:
 - `ChromeAdapter` in `testomniac_extension/src/adapters/ChromeAdapter.ts` (CDP via chrome.debugger)
-- `PuppeteerAdapter` in `testomniac_scanner/src/adapters/PuppeteerAdapter.ts` (Puppeteer page wrapper)
+- `PuppeteerAdapter` in `testomniac_runner/src/adapters/PuppeteerAdapter.ts` (Puppeteer page wrapper)
 
 ## ApiClient
 
@@ -309,7 +309,7 @@ DEFAULT_WORKERS = 3              // Concurrent test workers
 
 This library is the **shared foundation** consumed by both scanning clients:
 
-- **testomniac_scanner** — Server-side Puppeteer worker. Thin wrapper that calls `runScan()` with `PuppeteerAdapter` and a `TestExecutor` backed by a worker pool. Provides auth, email, runner, and plugin implementations.
+- **testomniac_runner** — Server-side Puppeteer worker. Thin wrapper that calls `runScan()` with `PuppeteerAdapter` and a `TestExecutor` backed by a worker pool. Provides auth, email, runner, and plugin implementations.
 - **testomniac_extension** — Chrome extension. Thin wrapper that calls `runScan()` with `ChromeAdapter`. Only runs `mouse_scanning` phase. Bridges events to side panel UI.
 - **testomniac_api** — REST API backend that `ApiClient` communicates with. Stores all scan data.
 - **testomniac_types** (`@sudobility/testomniac_types`) — Shared type definitions re-exported by this library.
@@ -324,7 +324,7 @@ This library is the **shared foundation** consumed by both scanning clients:
 - **Colocated tests**: Test files live next to source files (`*.test.ts` pattern). Run with `bun run test`.
 - **Hash-based dedup**: Page states are compared via 4-level hashing, not string equality.
 - **Constants, not config**: Timeouts, limits, and patterns are hardcoded constants. To change them, edit `config/constants.ts` and republish.
-- **Plugin interface is defined here, implementations live in consumers**: `Plugin`, `PluginContext`, `PluginResult` types and the registry are in this library. Actual plugin code (SEO, security, content, UI consistency) lives in `testomniac_scanner`.
+- **Plugin interface is defined here, implementations live in consumers**: `Plugin`, `PluginContext`, `PluginResult` types and the registry are in this library. Actual plugin code (SEO, security, content, UI consistency) lives in `testomniac_runner`.
 
 ## Gotchas
 
