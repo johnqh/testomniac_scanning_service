@@ -72,6 +72,10 @@ import type {
   InsertTestSuiteRequest,
 } from "@sudobility/testomniac_types";
 
+type CompleteRunPayload = CompleteRunRequest & {
+  status?: "completed" | "failed";
+};
+
 export class ApiClient {
   private baseUrl: string;
   private apiKey: string;
@@ -120,11 +124,11 @@ export class ApiClient {
   // ===========================================================================
 
   getPendingRun(): Promise<PendingRunResponse | null> {
-    return this.get("/runs/pending");
+    return this.get("/scans/pending");
   }
 
   getRun(runId: number): Promise<PendingRunResponse | null> {
-    return this.get(`/runs/${runId}`);
+    return this.get(`/scans/${runId}`);
   }
 
   updateRunPhase(runId: number, phase: string): Promise<void> {
@@ -133,7 +137,7 @@ export class ApiClient {
   }
 
   updateRunStats(runId: number, stats: UpdateRunStatsRequest): Promise<void> {
-    return this.patch(`/runs/${runId}/stats`, stats);
+    return this.patch(`/scans/${runId}/stats`, stats);
   }
 
   updatePhaseDuration(
@@ -142,16 +146,17 @@ export class ApiClient {
     durationMs: number
   ): Promise<void> {
     const body: UpdatePhaseDurationRequest = { field, durationMs };
-    return this.patch(`/runs/${runId}/phase-duration`, body);
+    return this.patch(`/scans/${runId}/phase-duration`, body);
   }
 
   completeRun(
     runId: number,
     aiSummary?: string,
-    totalDurationMs?: number
+    totalDurationMs?: number,
+    status?: "completed" | "failed"
   ): Promise<void> {
-    const body: CompleteRunRequest = { aiSummary, totalDurationMs };
-    return this.patch(`/runs/${runId}/complete`, body);
+    const body: CompleteRunPayload = { aiSummary, totalDurationMs, status };
+    return this.patch(`/scans/${runId}/complete`, body);
   }
 
   // ===========================================================================

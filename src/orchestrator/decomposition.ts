@@ -11,6 +11,16 @@ export async function processDecompositionJob(
   api: ApiClient,
   events: ScanEventHandler
 ): Promise<void> {
+  const pageState = await api.getPageState(job.pageStateId);
+  if (!pageState) {
+    throw new Error(`Page state ${job.pageStateId} not found`);
+  }
+
+  const page = await api.getPage(pageState.pageId);
+  if (!page) {
+    throw new Error(`Page ${pageState.pageId} not found`);
+  }
+
   // Generate test cases for this page state
   const generated = await generateTestCases({
     appId: config.appId,
@@ -26,7 +36,7 @@ export async function processDecompositionJob(
     title: `Page State #${job.pageStateId}`,
     description: `Auto-generated test suite for page state ${job.pageStateId}`,
     startingPageStateId: job.pageStateId,
-    startingPath: "/",
+    startingPath: page.relativePath,
     sizeClass: config.sizeClass,
     priority: 3,
     suite_tags: ["auto-generated"],
@@ -37,6 +47,23 @@ export async function processDecompositionJob(
   // Insert test cases and link to suite
   for (const { testCase } of generated) {
     const tc = await api.insertTestCase(config.appId, testCase);
+    for (const [index, step] of testCase.steps.entries()) {
+      await api.createTestAction({
+        testCaseId: tc.id,
+        stepOrder: index,
+        actionType: step.action.actionType,
+        pageStateId: step.action.pageStateId,
+        elementIdentityId: step.action.elementIdentityId,
+        containerType: step.action.containerType,
+        containerElementIdentityId: step.action.containerElementIdentityId,
+        value: step.action.value,
+        path: step.action.path,
+        playwrightCode: step.action.playwrightCode,
+        description: step.description,
+        expectations: step.expectations,
+        continueOnFailure: step.continueOnFailure,
+      });
+    }
     await api.linkSuiteToCase(suite.id, tc.id);
   }
 }
