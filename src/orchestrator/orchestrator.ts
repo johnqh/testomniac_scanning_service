@@ -1,134 +1,152 @@
 import type { BrowserAdapter } from "../adapter";
 import type { ApiClient } from "../api/client";
-import { PhaseTimer } from "../scanner/phase-timer";
-import type {
-  ScanConfig,
-  ScanEventHandler,
-  ScanResult,
-  TestExecutor,
-} from "./types";
-import { runMouseScanning } from "./mouse-scanning";
-import { runAiAnalysisPhase } from "./ai-analysis";
-import { runInputScanningPhase } from "./input-scanning";
-import { runTestGenerationPhase } from "./test-generation";
-import { runTestExecutionPhase } from "./test-execution";
+import type { ScanConfig, ScanEventHandler, ScanResult } from "./types";
+import { processDecompositionJob } from "./decomposition";
+import { executeTestCases } from "./test-execution";
 
 export async function runScan(
   adapter: BrowserAdapter,
   config: ScanConfig,
   api: ApiClient,
-  eventHandler: ScanEventHandler,
-  testExecutor?: TestExecutor
+  eventHandler: ScanEventHandler
 ): Promise<ScanResult> {
-  const timer = new PhaseTimer();
+  const startTime = Date.now();
 
   let pagesFound = 0;
   let pageStatesFound = 0;
-  let actionsCompleted = 0;
-  let issuesFound = 0;
+  let testRunsCompleted = 0;
+  let findingsFound = 0;
 
   const wrappedHandler: ScanEventHandler = {
     ...eventHandler,
     onPageFound(page) {
       pagesFound++;
       eventHandler.onPageFound(page);
-      eventHandler.onStatsUpdated({
-        pagesFound,
-        pageStatesFound,
-        actionsCompleted,
-        issuesFound,
-      });
+      emitStats();
     },
     onPageStateCreated(state) {
       pageStatesFound++;
       eventHandler.onPageStateCreated(state);
-      eventHandler.onStatsUpdated({
-        pagesFound,
-        pageStatesFound,
-        actionsCompleted,
-        issuesFound,
-      });
+      emitStats();
     },
-    onActionCompleted(action) {
-      actionsCompleted++;
-      eventHandler.onActionCompleted(action);
-      eventHandler.onStatsUpdated({
-        pagesFound,
-        pageStatesFound,
-        actionsCompleted,
-        issuesFound,
-      });
+    onTestRunCompleted(run) {
+      testRunsCompleted++;
+      eventHandler.onTestRunCompleted(run);
+      emitStats();
     },
-    onIssueDetected(issue) {
-      issuesFound++;
-      eventHandler.onIssueDetected(issue);
-      eventHandler.onStatsUpdated({
-        pagesFound,
-        pageStatesFound,
-        actionsCompleted,
-        issuesFound,
-      });
+    onFindingCreated(finding) {
+      findingsFound++;
+      eventHandler.onFindingCreated(finding);
+      emitStats();
     },
   };
 
-  try {
-    await api.updateRunPhase(config.runId, "mouse_scanning");
-
-    for (const phase of config.phases) {
-      if (config.signal?.aborted) break;
-      wrappedHandler.onPhaseChanged(phase);
-      timer.startPhase(phase);
-
-      try {
-        switch (phase) {
-          case "mouse_scanning":
-            await runMouseScanning(adapter, config, api, wrappedHandler);
-            break;
-          case "ai_analysis":
-            await runAiAnalysisPhase(config, api, wrappedHandler);
-            break;
-          case "input_scanning":
-            await runInputScanningPhase(adapter, config, api, wrappedHandler);
-            break;
-          case "test_generation":
-            await runTestGenerationPhase(config, api);
-            break;
-          case "test_execution":
-            if (testExecutor) {
-              await runTestExecutionPhase(
-                config,
-                api,
-                wrappedHandler,
-                testExecutor
-              );
-            }
-            break;
-        }
-      } finally {
-        timer.endPhase(phase);
-        const durationMs = timer.getAllDurations()[phase] || 0;
-        await api
-          .updatePhaseDuration(config.runId, `${phase}_duration_ms`, durationMs)
-          .catch(() => {});
-      }
-    }
-
-    const totalDuration = timer.totalElapsed();
-    await api.completeRun(config.runId, undefined, totalDuration);
-
-    const result: ScanResult = {
-      runId: config.runId,
+  function emitStats() {
+    eventHandler.onStatsUpdated({
       pagesFound,
       pageStatesFound,
-      actionsCompleted,
-      issuesFound,
-      durationMs: totalDuration,
+      testRunsCompleted,
+      findingsFound,
+    });
+  }
+
+  try {
+    // 1. Navigate to scan URL, capture initial page state
+    await adapter.goto(config.scanUrl, { waitUntil: "networkidle0" });
+    const initialHtml = await adapter.content();
+
+    // Compute relative path from scanUrl and baseUrl
+    const scanUrlObj = new URL(config.scanUrl);
+    const relativePath = scanUrlObj.pathname;
+
+    const page = await api.findOrCreatePage(config.appId, relativePath);
+    wrappedHandler.onPageFound({ relativePath, pageId: page.id });
+
+    // Import page-utils for hash computation
+    const { computeHashes } = await import("../browser/page-utils");
+    const { extractActionableItems } = await import("../extractors");
+    const items = await extractActionableItems(adapter);
+    const hashes = await computeHashes(initialHtml, items);
+
+    const initialPageState = await api.createPageState({
+      pageId: page.id,
+      sizeClass: config.sizeClass,
+      hashes,
+      screenshotPath: undefined,
+      contentText: initialHtml.slice(0, 5000),
+    });
+    wrappedHandler.onPageStateCreated({
+      pageStateId: initialPageState.id,
+      pageId: page.id,
+    });
+
+    // 2. Create initial AI Decomposition Job
+    const initialJob = await api.createDecompositionJob(
+      config.scanId,
+      initialPageState.id
+    );
+    wrappedHandler.onDecompositionJobCreated({
+      jobId: initialJob.id,
+      pageStateId: initialPageState.id,
+    });
+
+    // 3. Generate/Run loop
+    let iteration = 0;
+    const MAX_ITERATIONS = 50;
+
+    while (iteration < MAX_ITERATIONS) {
+      if (config.signal?.aborted) break;
+      iteration++;
+
+      // Phase 1: GENERATE — process all pending decomposition jobs
+      const pendingJobs = await api.getPendingDecompositionJobs(config.scanId);
+      for (const job of pendingJobs) {
+        if (config.signal?.aborted) break;
+        await processDecompositionJob(
+          job,
+          adapter,
+          config,
+          api,
+          wrappedHandler
+        );
+        await api.completeDecompositionJob(job.id);
+        wrappedHandler.onDecompositionJobCompleted({ jobId: job.id });
+      }
+
+      // Phase 2: RUN — execute test cases, check for new page states
+      const newJobsCreated = await executeTestCases(
+        config,
+        adapter,
+        api,
+        wrappedHandler
+      );
+
+      // If no new decomposition jobs were created, we're done
+      if (!newJobsCreated) break;
+    }
+
+    // 4. Complete scan
+    const durationMs = Date.now() - startTime;
+    await api.completeRun(config.scanId, undefined, durationMs);
+    await api.updateRunStats(config.scanId, {
+      pagesFound,
+      pageStatesFound,
+      testRunsCompleted,
+    });
+
+    const result: ScanResult = {
+      scanId: config.scanId,
+      pagesFound,
+      pageStatesFound,
+      testRunsCompleted,
+      findingsFound,
+      durationMs,
     };
 
     wrappedHandler.onScanComplete({
       totalPages: pagesFound,
-      totalIssues: issuesFound,
-      durationMs: totalDuration,
+      totalFindings: findingsFound,
+      durationMs,
     });
 
     return result;

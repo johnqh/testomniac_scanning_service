@@ -3,7 +3,7 @@ export type { BrowserAdapter } from "./adapter";
 
 // Scanner modules (existing)
 export * from "./scanner/issue-detector";
-export * from "./scanner/action-queue";
+// action-queue is deprecated, no longer exported
 export * from "./scanner/pairwise";
 export * from "./scanner/loop-guard";
 export * from "./scanner/phase-timer";
@@ -104,19 +104,14 @@ export {
 export { generateNavigationTest } from "./generation/navigation";
 export { generateE2ETest, enumerateE2EPaths } from "./generation/e2e";
 
-// Orchestrator (new)
+// Orchestrator
 export { runScan } from "./orchestrator/orchestrator";
-export { runMouseScanning } from "./orchestrator/mouse-scanning";
-export { runAiAnalysisPhase } from "./orchestrator/ai-analysis";
-export { runInputScanningPhase } from "./orchestrator/input-scanning";
-export { runTestGenerationPhase } from "./orchestrator/test-generation";
-export { runTestExecutionPhase } from "./orchestrator/test-execution";
+export { processDecompositionJob } from "./orchestrator/decomposition";
+export { executeTestCases } from "./orchestrator/test-execution";
 export type {
   ScanConfig,
   ScanEventHandler,
   ScanResult,
-  ScanPhase,
-  TestExecutor,
 } from "./orchestrator/types";
 
 // Plugins (new)

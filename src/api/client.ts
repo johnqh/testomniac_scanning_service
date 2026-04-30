@@ -53,6 +53,23 @@ import type {
   InsertPageStatePatternsRequest,
   PageStatePatternResponse,
   UiPattern,
+  CreateDecompositionJobRequest,
+  DecompositionJobResponse,
+  CreateTestSuiteSuiteLinkRequest,
+  TestSuiteSuiteLinkResponse,
+  CreateTestSuiteCaseLinkRequest,
+  TestSuiteCaseLinkResponse,
+  CreateTestActionRequest,
+  TestActionResponse,
+  CreateTestRunFindingRequest,
+  TestRunFindingResponse,
+  ExpertiseResponse,
+  CreateExpertiseRequest,
+  ExpertiseRuleResponse,
+  CreateExpertiseRuleRequest,
+  TestSuite,
+  TestSuiteResponse,
+  InsertTestSuiteRequest,
 } from "@sudobility/testomniac_types";
 
 export class ApiClient {
@@ -410,6 +427,122 @@ export class ApiClient {
     result: CompleteTestRunRequest
   ): Promise<void> {
     return this.patch(`/test-runs/${testRunId}/complete`, result);
+  }
+
+  // ===========================================================================
+  // AI Decomposition Jobs
+  // ===========================================================================
+
+  createDecompositionJob(
+    scanId: number,
+    pageStateId: number,
+    personaId?: number
+  ): Promise<DecompositionJobResponse> {
+    const body: CreateDecompositionJobRequest = {
+      scanId,
+      pageStateId,
+      personaId,
+    };
+    return this.post("/ai-decomposition-jobs", body);
+  }
+
+  getPendingDecompositionJobs(
+    scanId: number
+  ): Promise<DecompositionJobResponse[]> {
+    return this.get(`/ai-decomposition-jobs/pending?scanId=${scanId}`);
+  }
+
+  completeDecompositionJob(jobId: number): Promise<void> {
+    return this.patch(`/ai-decomposition-jobs/${jobId}/complete`);
+  }
+
+  // ===========================================================================
+  // Test Suite Junction Tables
+  // ===========================================================================
+
+  linkSuiteToSuite(
+    parentSuiteId: number,
+    childSuiteId: number
+  ): Promise<TestSuiteSuiteLinkResponse> {
+    const body: CreateTestSuiteSuiteLinkRequest = {
+      parentSuiteId,
+      childSuiteId,
+    };
+    return this.post("/test-suite-suites", body);
+  }
+
+  linkSuiteToCase(
+    testSuiteId: number,
+    testCaseId: number
+  ): Promise<TestSuiteCaseLinkResponse> {
+    const body: CreateTestSuiteCaseLinkRequest = { testSuiteId, testCaseId };
+    return this.post("/test-suite-cases", body);
+  }
+
+  // ===========================================================================
+  // Test Actions (persisted)
+  // ===========================================================================
+
+  createTestAction(
+    params: CreateTestActionRequest
+  ): Promise<TestActionResponse> {
+    return this.post("/test-actions", params);
+  }
+
+  getTestActionsByCase(testCaseId: number): Promise<TestActionResponse[]> {
+    return this.get(`/test-actions?testCaseId=${testCaseId}`);
+  }
+
+  // ===========================================================================
+  // Test Run Findings
+  // ===========================================================================
+
+  createTestRunFinding(
+    params: CreateTestRunFindingRequest
+  ): Promise<TestRunFindingResponse> {
+    return this.post("/test-run-findings", params);
+  }
+
+  // ===========================================================================
+  // Expertise
+  // ===========================================================================
+
+  getExpertises(): Promise<ExpertiseResponse[]> {
+    return this.get("/expertises");
+  }
+
+  getExpertiseRules(expertiseId: number): Promise<ExpertiseRuleResponse[]> {
+    return this.get(`/expertise-rules?expertiseId=${expertiseId}`);
+  }
+
+  createExpertise(params: CreateExpertiseRequest): Promise<ExpertiseResponse> {
+    return this.post("/expertises", params);
+  }
+
+  createExpertiseRule(
+    params: CreateExpertiseRuleRequest
+  ): Promise<ExpertiseRuleResponse> {
+    return this.post("/expertise-rules", params);
+  }
+
+  // ===========================================================================
+  // Test Suites
+  // ===========================================================================
+
+  insertTestSuite(
+    appId: number,
+    testSuite: TestSuite
+  ): Promise<TestSuiteResponse> {
+    const body: InsertTestSuiteRequest = { appId, testSuite };
+    return this.post("/test-suites", body);
+  }
+
+  getTestSuitesByApp(appId: number): Promise<TestSuiteResponse[]> {
+    return this.get(`/test-suites?appId=${appId}`);
+  }
+
+  getTestSuite(id: number): Promise<TestSuiteResponse | null> {
+    return this.get(`/test-suites/${id}`);
   }
 
   // ===========================================================================

@@ -1,66 +1,49 @@
-import type { LegacyTestAction, Screen } from "../domain/types";
-
-export type ScanPhase =
-  | "mouse_scanning"
-  | "ai_analysis"
-  | "input_scanning"
-  | "test_generation"
-  | "test_execution";
+import type { SizeClass } from "../domain/types";
 
 export interface ScanConfig {
-  runId: number;
+  scanId: number;
   appId: number;
+  scanUrl: string;
   baseUrl: string;
-  phases: ScanPhase[];
-  sizeClass?: string;
+  sizeClass: SizeClass;
   openaiApiKey?: string;
   openaiModel?: string;
   testWorkerCount?: number;
-  /** AbortSignal to cancel the scan. When aborted, the scan loop exits gracefully. */
   signal?: AbortSignal;
 }
 
 export interface ScanEventHandler {
-  onPageFound(page: { url: string; pageId: number }): void;
+  onPageFound(page: { relativePath: string; pageId: number }): void;
   onPageStateCreated(state: {
     pageStateId: number;
     pageId: number;
     screenshotPath?: string;
   }): void;
-  onActionCompleted(action: {
-    type: string;
-    selector?: string;
-    pageUrl: string;
-  }): void;
-  onIssueDetected(issue: { type: string; description: string }): void;
-  onPhaseChanged(phase: string): void;
+  onDecompositionJobCreated(job: { jobId: number; pageStateId: number }): void;
+  onDecompositionJobCompleted(job: { jobId: number }): void;
+  onTestSuiteCreated(suite: { suiteId: number; title: string }): void;
+  onTestRunCompleted(run: { testRunId: number; passed: boolean }): void;
+  onFindingCreated(finding: { type: string; title: string }): void;
   onStatsUpdated(stats: {
     pagesFound: number;
     pageStatesFound: number;
-    actionsCompleted: number;
-    issuesFound: number;
+    testRunsCompleted: number;
+    findingsFound: number;
   }): void;
   onScreenshotCaptured(data: { dataUrl: string; pageUrl: string }): void;
   onScanComplete(summary: {
     totalPages: number;
-    totalIssues: number;
+    totalFindings: number;
     durationMs: number;
   }): void;
-  onError(error: { message: string; phase?: string }): void;
-}
-
-export interface TestExecutor {
-  executeTestCase(
-    actions: LegacyTestAction[],
-    screen: Screen
-  ): Promise<{ passed: boolean; error?: string; durationMs: number }>;
+  onError(error: { message: string }): void;
 }
 
 export interface ScanResult {
-  runId: number;
+  scanId: number;
   pagesFound: number;
   pageStatesFound: number;
-  actionsCompleted: number;
-  issuesFound: number;
+  testRunsCompleted: number;
+  findingsFound: number;
   durationMs: number;
 }

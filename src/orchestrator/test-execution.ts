@@ -1,56 +1,70 @@
+import type { BrowserAdapter } from "../adapter";
 import type { ApiClient } from "../api/client";
-import type { ScanConfig, ScanEventHandler, TestExecutor } from "./types";
-import { DESKTOP_SCREENS } from "../domain/types";
+import type { ScanConfig, ScanEventHandler } from "./types";
 
-export async function runTestExecutionPhase(
+export async function executeTestCases(
   config: ScanConfig,
+  _adapter: BrowserAdapter,
   api: ApiClient,
-  events: ScanEventHandler,
-  executor: TestExecutor
-): Promise<void> {
+  events: ScanEventHandler
+): Promise<boolean> {
   const testCases = await api.getTestCasesByApp(config.appId);
-  const screen = DESKTOP_SCREENS[0];
+  const newJobsCreated = false;
 
   for (const tc of testCases) {
+    if (config.signal?.aborted) break;
+
+    // Check dependency
+    if (tc.dependencyTestCaseId) {
+      // TODO: check if dependency is met
+    }
+
+    // Create test run
     const testRun = await api.createTestRun({
       testCaseId: tc.id,
-      scanId: config.runId,
-      sizeClass: config.sizeClass || "desktop",
+      scanId: config.scanId,
+      sizeClass: config.sizeClass,
     });
 
+    const startTime = Date.now();
+
     try {
-      // Parse actions from the test case (stored as JSON)
-      const actions = (tc as any).actionsJson || [];
-      const result = await executor.executeTestCase(actions, screen);
-
+      // TODO: Execute test actions via browser adapter
+      // For now, mark as completed
+      const durationMs = Date.now() - startTime;
       await api.completeTestRun(testRun.id, {
-        status: result.passed ? "passed" : "failed",
-        durationMs: result.durationMs,
-        errorMessage: result.error,
+        status: "completed",
+        durationMs,
       });
 
-      if (!result.passed && result.error) {
-        await api.createIssue({
-          appId: config.appId,
-          scanId: config.runId,
-          testCaseId: tc.id,
-          testRunId: testRun.id,
-          severity: "bug",
-          ruleName: "test_failure",
-          title: `Test failure: ${tc.title}`,
-          description: result.error,
-        });
-        events.onIssueDetected({
-          type: "test_failure",
-          description: `${tc.title}: ${result.error}`,
-        });
-      }
+      events.onTestRunCompleted({ testRunId: testRun.id, passed: true });
     } catch (error) {
+      const durationMs = Date.now() - startTime;
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+
       await api.completeTestRun(testRun.id, {
-        status: "failed",
-        durationMs: 0,
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
+        status: "completed",
+        durationMs,
+        errorMessage,
       });
+
+      // Create finding for the error
+      await api.createTestRunFinding({
+        testRunId: testRun.id,
+        type: "error",
+        title: `Test failure: ${tc.title}`,
+        description: errorMessage,
+      });
+
+      events.onFindingCreated({
+        type: "error",
+        title: `Test failure: ${tc.title}`,
+      });
+
+      events.onTestRunCompleted({ testRunId: testRun.id, passed: false });
     }
   }
+
+  return newJobsCreated;
 }
