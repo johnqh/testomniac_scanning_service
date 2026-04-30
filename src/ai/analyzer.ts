@@ -23,7 +23,9 @@ export async function runAiAnalysis(options: AnalyzerOptions): Promise<void> {
     const states = await api.getPageStates(page.id);
     for (const state of states) {
       if (state.contentText && state.contentText.trim().length > 50) {
-        pageContents.push(`[${page.url}]\n${state.contentText.slice(0, 1000)}`);
+        pageContents.push(
+          `[${page.relativePath}]\n${state.contentText.slice(0, 1000)}`
+        );
       }
     }
   }

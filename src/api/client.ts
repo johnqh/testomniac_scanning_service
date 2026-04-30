@@ -153,8 +153,8 @@ export class ApiClient {
     return this.get(`/pages/${id}`);
   }
 
-  findOrCreatePage(appId: number, url: string): Promise<PageResponse> {
-    const body: FindOrCreatePageRequest = { appId, url };
+  findOrCreatePage(appId: number, relativePath: string): Promise<PageResponse> {
+    const body: FindOrCreatePageRequest = { appId, relativePath };
     return this.post("/pages", body);
   }
 
@@ -299,10 +299,10 @@ export class ApiClient {
 
   createPersona(
     appId: number,
-    name: string,
+    title: string,
     description: string
   ): Promise<PersonaResponse> {
-    const body: CreatePersonaRequest = { appId, name, description };
+    const body: CreatePersonaRequest = { appId, title, description };
     return this.post("/personas", body);
   }
 
@@ -312,10 +312,10 @@ export class ApiClient {
 
   createUseCase(
     personaId: number,
-    name: string,
+    title: string,
     description: string
   ): Promise<UseCaseResponse> {
-    const body: CreateUseCaseRequest = { personaId, name, description };
+    const body: CreateUseCaseRequest = { personaId, title, description };
     return this.post("/use-cases", body);
   }
 

@@ -9,13 +9,13 @@ import type { TestCase } from "../domain/types";
 
 function makeTestCase(overrides: Partial<TestCase>): TestCase {
   return {
-    name: "Test",
+    title: "Test",
     type: "render",
     sizeClass: "desktop",
     suite_tags: [],
-    priority: "normal",
+    priority: 3,
     startingPageStateId: 1,
-    startingUrl: "https://example.com",
+    startingPath: "/",
     steps: [],
     globalExpectations: [],
     ...overrides,
@@ -25,12 +25,12 @@ function makeTestCase(overrides: Partial<TestCase>): TestCase {
 describe("exportAsPlaywrightScript", () => {
   it("generates a render test with steps and expectations", () => {
     const tc = makeTestCase({
-      name: "Render — Home Page",
+      title: "Render — Home Page",
       steps: [
         {
           action: {
             actionType: PlaywrightAction.Goto,
-            url: "https://example.com",
+            path: "/",
             playwrightCode: "await page.goto('https://example.com');",
             description: "Navigate",
           },
@@ -78,7 +78,7 @@ describe("exportAsPlaywrightScript", () => {
 
   it("generates steps with fill + click and expectations", () => {
     const tc = makeTestCase({
-      name: "Login flow",
+      title: "Login flow",
       steps: [
         {
           action: {

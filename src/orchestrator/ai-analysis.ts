@@ -25,7 +25,7 @@ export async function runAiAnalysisPhase(
       for (const form of stateForms) {
         const fields = form.fieldsJson as any[];
         if (fields && fields.length > 0) {
-          forms.push({ pageUrl: page.url, fields });
+          forms.push({ pageUrl: page.relativePath, fields });
         }
       }
     }

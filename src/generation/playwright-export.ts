@@ -4,7 +4,7 @@ export function exportAsPlaywrightScript(testCase: TestCase): string {
   const lines: string[] = [
     "import { test, expect } from '@playwright/test';",
     "",
-    `test('${escapeSingleQuotes(testCase.name)}', async ({ page }) => {`,
+    `test('${escapeSingleQuotes(testCase.title)}', async ({ page }) => {`,
   ];
 
   for (const step of testCase.steps) {

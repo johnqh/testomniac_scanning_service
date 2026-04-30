@@ -33,7 +33,7 @@ export async function runInputScanningPhase(
         const fields = form.fieldsJson as any[];
         if (fields && fields.length > 0) {
           formsToTest.push({
-            pageUrl: page.url,
+            pageUrl: page.relativePath,
             pageId: page.id,
             pageStateId: state.id,
             fields,

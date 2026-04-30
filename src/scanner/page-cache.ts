@@ -20,7 +20,7 @@ export class PageCache {
   async preload(): Promise<void> {
     const pages = await this.api.getPagesByApp(this.appId);
     for (const page of pages) {
-      this.cache.set(this.normalizeUrl(page.url), page);
+      this.cache.set(this.normalizeUrl(page.relativePath), page);
     }
   }
 

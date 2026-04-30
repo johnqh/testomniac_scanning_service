@@ -15,7 +15,7 @@ export async function runTestExecutionPhase(
     const testRun = await api.createTestRun({
       testCaseId: tc.id,
       scanId: config.runId,
-      screen: config.sizeClass || "desktop",
+      sizeClass: config.sizeClass || "desktop",
     });
 
     try {
@@ -37,12 +37,12 @@ export async function runTestExecutionPhase(
           testRunId: testRun.id,
           severity: "bug",
           ruleName: "test_failure",
-          title: `Test failure: ${tc.name}`,
+          title: `Test failure: ${tc.title}`,
           description: result.error,
         });
         events.onIssueDetected({
           type: "test_failure",
-          description: `${tc.name}: ${result.error}`,
+          description: `${tc.title}: ${result.error}`,
         });
       }
     } catch (error) {

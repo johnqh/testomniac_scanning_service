@@ -38,7 +38,7 @@ interface RenderInput {
   pageName: string;
   url: string;
   sizeClass: SizeClass;
-  priority: string;
+  priority: number;
   elements: RenderElement[];
 }
 
@@ -50,7 +50,7 @@ export function generateRenderTest(input: RenderInput): GeneratedTestCase {
     action: {
       actionType: PlaywrightAction.Goto,
       pageStateId: input.pageStateId,
-      url: input.url,
+      path: input.url,
       playwrightCode: `await page.goto('${input.url}');`,
       description: `Navigate to ${input.url}`,
     },
@@ -112,14 +112,14 @@ export function generateRenderTest(input: RenderInput): GeneratedTestCase {
 
   return {
     testCase: {
-      name: `Render — ${input.pageName}`,
+      title: `Render — ${input.pageName}`,
       type: "render",
       sizeClass: input.sizeClass,
       suite_tags: assignSuiteTags("render", input.priority),
       page_id: input.pageId,
       priority: input.priority,
       startingPageStateId: input.pageStateId,
-      startingUrl: input.url,
+      startingPath: input.url,
       steps,
       globalExpectations: [
         {

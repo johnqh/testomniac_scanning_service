@@ -24,7 +24,7 @@ export async function generateTestCases(
     options.elementIdentities ?? (await api.getElementIdentitiesByApp(appId));
 
   for (const page of allPages) {
-    const priority = assignPriority(page.routeKey || "", page.url);
+    const priority = assignPriority(page.routeKey || "", page.relativePath);
 
     // Get page states for this page to find element identities
     const pageStates = await api.getPageStates(page.id);
@@ -47,8 +47,8 @@ export async function generateTestCases(
       generateRenderTest({
         pageId: page.id,
         pageStateId: pageState?.id ?? 0,
-        pageName: page.routeKey || page.url,
-        url: page.url,
+        pageName: page.routeKey || page.relativePath,
+        url: page.relativePath,
         sizeClass,
         priority,
         elements: pageElements,

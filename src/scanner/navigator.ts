@@ -70,7 +70,7 @@ export class Navigator {
     const pageRecord = await this.api.getPage(pageState.pageId);
     if (!pageRecord) return null;
 
-    return { pageId: pageRecord.id, url: pageRecord.url };
+    return { pageId: pageRecord.id, url: pageRecord.relativePath };
   }
 
   async resolveTargetPageUrl(targetPageId: number | null): Promise<string> {
@@ -78,7 +78,7 @@ export class Navigator {
 
     const pageRecord = await this.api.getPage(targetPageId);
     if (!pageRecord) return this.baseUrl;
-    return pageRecord.url;
+    return pageRecord.relativePath;
   }
 
   getStateManager(): StateManager {
