@@ -12,7 +12,7 @@ export class Navigator {
   constructor(opts: {
     stateManager: StateManager;
     api: ApiClient;
-    appId: number;
+    runnerId: number;
     runId: number;
     sizeClass: string;
     baseUrl: string;

@@ -6,16 +6,16 @@ import type {
 
 export class ReusableElementCache {
   private cache = new Map<string, ReusableHtmlElementResponse>();
-  private appId: number;
+  private runnerId: number;
   private api: ApiClient;
 
-  constructor(appId: number, api: ApiClient) {
-    this.appId = appId;
+  constructor(runnerId: number, api: ApiClient) {
+    this.runnerId = runnerId;
     this.api = api;
   }
 
   async preload(): Promise<void> {
-    const existing = await this.api.getReusableHtmlElements(this.appId);
+    const existing = await this.api.getReusableHtmlElements(this.runnerId);
     for (const el of existing) {
       if (el.htmlHash) {
         this.cache.set(el.htmlHash, el);
@@ -32,7 +32,7 @@ export class ReusableElementCache {
     if (cached) return cached;
 
     const result = await this.api.findOrCreateReusableHtmlElement({
-      appId: this.appId,
+      runnerId: this.runnerId,
       type,
       html,
       hash,

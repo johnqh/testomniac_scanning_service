@@ -2,7 +2,7 @@ import type { BrowserAdapter } from "../adapter";
 import type { NetworkLogEntry, FormInfo } from "../domain/types";
 
 export interface PluginContext {
-  appId: number;
+  runnerId: number;
   runId: number;
   baseUrl: string;
   pages: { id: number; url: string }[];

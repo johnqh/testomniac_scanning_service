@@ -5,7 +5,7 @@ import type { ApiClient } from "../api/client";
 import type { ElementIdentityResponse } from "@sudobility/testomniac_types";
 
 export interface GeneratorOptions {
-  appId: number;
+  runnerId: number;
   runId: number;
   sizeClass: SizeClass;
   api: ApiClient;
@@ -15,13 +15,14 @@ export interface GeneratorOptions {
 export async function generateTestCases(
   options: GeneratorOptions
 ): Promise<GeneratedTestCase[]> {
-  const { appId, sizeClass, api } = options;
+  const { runnerId, sizeClass, api } = options;
   const results: GeneratedTestCase[] = [];
-  const allPages = await api.getPagesByApp(appId);
+  const allPages = await api.getPagesByRunner(runnerId);
 
   // Load element identities if not provided
   const identities =
-    options.elementIdentities ?? (await api.getElementIdentitiesByApp(appId));
+    options.elementIdentities ??
+    (await api.getElementIdentitiesByRunner(runnerId));
 
   for (const page of allPages) {
     const priority = assignPriority(page.routeKey || "", page.relativePath);

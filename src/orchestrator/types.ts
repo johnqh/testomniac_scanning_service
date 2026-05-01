@@ -2,7 +2,7 @@ import type { SizeClass } from "../domain/types";
 
 export interface ScanConfig {
   scanId: number;
-  appId: number;
+  runnerId: number;
   scanUrl: string;
   baseUrl: string;
   sizeClass: SizeClass;

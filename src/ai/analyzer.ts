@@ -6,7 +6,8 @@ import { generateUseCases } from "./use-case-generator";
 import { generateInputValues } from "./input-generator";
 
 export interface AnalyzerOptions {
-  appId: number;
+  runnerId: number;
+  productId: number;
   runId: number;
   forms: Array<{ pageUrl: string; fields: FormField[] }>;
   openaiClient: OpenAI;
@@ -15,9 +16,9 @@ export interface AnalyzerOptions {
 }
 
 export async function runAiAnalysis(options: AnalyzerOptions): Promise<void> {
-  const { appId, forms, openaiClient: client, api } = options;
+  const { runnerId, productId, forms, openaiClient: client, api } = options;
 
-  const pages = await api.getPagesByApp(appId);
+  const pages = await api.getPagesByRunner(runnerId);
   const pageContents: string[] = [];
   for (const page of pages) {
     const states = await api.getPageStates(page.id);
@@ -57,7 +58,7 @@ export async function runAiAnalysis(options: AnalyzerOptions): Promise<void> {
   const useCaseNames: string[] = [];
 
   for (const pr of personaResults) {
-    const persona = await api.createPersona(appId, pr.name, pr.description);
+    const persona = await api.createPersona(productId, pr.name, pr.description);
     personaNames.push(pr.name);
 
     const ucResults = await generateUseCases(

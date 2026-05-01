@@ -23,7 +23,7 @@ export async function processDecompositionJob(
 
   // Generate test cases for this page state
   const generated = await generateTestCases({
-    appId: config.appId,
+    runnerId: config.runnerId,
     runId: config.scanId,
     sizeClass: config.sizeClass,
     api,
@@ -32,7 +32,7 @@ export async function processDecompositionJob(
   if (generated.length === 0) return;
 
   // Create a test suite for this decomposition job
-  const suite = await api.insertTestSuite(config.appId, {
+  const suite = await api.insertTestSuite(config.runnerId, {
     title: `Page State #${job.pageStateId}`,
     description: `Auto-generated test suite for page state ${job.pageStateId}`,
     startingPageStateId: job.pageStateId,
@@ -46,7 +46,7 @@ export async function processDecompositionJob(
 
   // Insert test cases and link to suite
   for (const { testCase } of generated) {
-    const tc = await api.insertTestCase(config.appId, testCase);
+    const tc = await api.insertTestCase(config.runnerId, testCase);
     for (const [index, step] of testCase.steps.entries()) {
       await api.createTestAction({
         testCaseId: tc.id,

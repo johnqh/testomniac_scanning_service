@@ -10,7 +10,7 @@ function makeResponse(
 ): ElementIdentityResponse {
   return {
     id: 1,
-    appId: 1,
+    runnerId: 1,
     role: "generic",
     computedName: null,
     tagName: "DIV",
@@ -29,8 +29,8 @@ function makeResponse(
     isUniqueOnPage: true,
     cssSelector: "div",
     locators: [],
-    firstSeenScanId: 1,
-    lastSeenScanId: 1,
+    firstSeenTestRunId: 1,
+    lastSeenTestRunId: 1,
     timesSeen: 1,
     createdAt: null,
     updatedAt: null,

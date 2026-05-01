@@ -8,17 +8,17 @@ import type { PageResponse } from "@sudobility/testomniac_types";
  */
 export class PageCache {
   private cache = new Map<string, PageResponse>();
-  private appId: number;
+  private runnerId: number;
   private api: ApiClient;
 
-  constructor(appId: number, api: ApiClient) {
-    this.appId = appId;
+  constructor(runnerId: number, api: ApiClient) {
+    this.runnerId = runnerId;
     this.api = api;
   }
 
   /** Preload all existing pages for this app from the API. */
   async preload(): Promise<void> {
-    const pages = await this.api.getPagesByApp(this.appId);
+    const pages = await this.api.getPagesByRunner(this.runnerId);
     for (const page of pages) {
       this.cache.set(this.normalizeUrl(page.relativePath), page);
     }
@@ -30,7 +30,7 @@ export class PageCache {
     const cached = this.cache.get(key);
     if (cached) return cached;
 
-    const page = await this.api.findOrCreatePage(this.appId, url);
+    const page = await this.api.findOrCreatePage(this.runnerId, url);
     this.cache.set(key, page);
     return page;
   }

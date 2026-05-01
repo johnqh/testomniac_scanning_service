@@ -14,7 +14,7 @@ export interface DetectionContext {
   pageRecord: PageResponse;
   pageState: PageStateResponse;
   items: ActionableItem[];
-  appId: number;
+  runnerId: number;
   scanId: number;
   currentActionChain: ActionDefinitionResponse[];
 }

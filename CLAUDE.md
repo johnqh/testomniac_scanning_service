@@ -117,7 +117,7 @@ The orchestrator is the primary consumer API. Both `testomniac_runner` and `test
 ```typescript
 runScan(
   adapter: BrowserAdapter,    // ChromeAdapter or PuppeteerAdapter
-  config: ScanConfig,         // runId, appId, baseUrl, phases, options
+  config: ScanConfig,         // runId, runnerId, baseUrl, phases, options
   api: ApiClient,             // HTTP client for testomniac_api
   eventHandler: ScanEventHandler,  // Progress callbacks
   testExecutor?: TestExecutor      // Optional test runner (server-side only)
@@ -129,7 +129,7 @@ runScan(
 ```typescript
 interface ScanConfig {
   runId: number;
-  appId: number;
+  runnerId: number;
   baseUrl: string;
   phases: ScanPhase[];          // ["mouse_scanning", "ai_analysis", "input_scanning", ...]
   sizeClass?: string;
@@ -237,7 +237,7 @@ const client = getApiClient(baseUrl, apiKey);
 - **Personas/use cases**: `createPersona()`, `createUseCase()`, `createInputValue()`
 - **Forms/tests**: `insertForm()`, `insertTestCase()`, `createTestRun()`, `completeTestRun()`
 - **Issues**: `createIssue()`, `getIssuesByRun()`
-- **Other**: AI usage tracking, report emails, component saving, `getApp()`
+- **Other**: AI usage tracking, report emails, component saving, `getRunner()`
 
 All methods communicate via HTTP with `X-Scanner-Key` header authentication.
 

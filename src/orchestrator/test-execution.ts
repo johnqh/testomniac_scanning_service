@@ -24,7 +24,7 @@ async function captureCurrentPageState(
   }
 
   const relativePath = `${current.pathname}${current.search}${current.hash}`;
-  const page = await api.findOrCreatePage(config.appId, relativePath);
+  const page = await api.findOrCreatePage(config.runnerId, relativePath);
   const html = await adapter.content();
   const items = await extractActionableItems(adapter);
   const hashes = await computeHashes(html, items);
@@ -125,7 +125,7 @@ export async function executeTestCases(
   api: ApiClient,
   events: ScanEventHandler
 ): Promise<boolean> {
-  const testCases = await api.getTestCasesByApp(config.appId);
+  const testCases = await api.getTestCasesByRunner(config.runnerId);
   let newJobsCreated = false;
   const completedCaseIds = new Set<number>();
 
@@ -142,7 +142,7 @@ export async function executeTestCases(
     // Create test case run + child test run
     const testCaseRun = await api.createTestCaseRun({ testCaseId: tc.id });
     const testRun = await api.createTestRun({
-      appId: config.appId,
+      runnerId: config.runnerId,
       testCaseRunId: testCaseRun.id,
       parentTestRunId: config.scanId,
       rootTestRunId: config.scanId,

@@ -59,7 +59,7 @@ export async function runScan(
     const scanUrlObj = new URL(config.scanUrl);
     const relativePath = scanUrlObj.pathname;
 
-    const page = await api.findOrCreatePage(config.appId, relativePath);
+    const page = await api.findOrCreatePage(config.runnerId, relativePath);
     wrappedHandler.onPageFound({ relativePath, pageId: page.id });
 
     // Import page-utils for hash computation

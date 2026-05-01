@@ -2,17 +2,19 @@ import type { ApiClient } from "../api/client";
 import type { ElementIdentityResponse } from "@sudobility/testomniac_types";
 
 export class IdentityCache {
-  private appId: number;
+  private runnerId: number;
   private api: ApiClient;
   private identities: ElementIdentityResponse[] = [];
 
-  constructor(appId: number, api: ApiClient) {
-    this.appId = appId;
+  constructor(runnerId: number, api: ApiClient) {
+    this.runnerId = runnerId;
     this.api = api;
   }
 
   async preload(): Promise<void> {
-    this.identities = await this.api.getElementIdentitiesByApp(this.appId);
+    this.identities = await this.api.getElementIdentitiesByRunner(
+      this.runnerId
+    );
   }
 
   getAll(): ElementIdentityResponse[] {

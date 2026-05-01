@@ -2,7 +2,7 @@ import type {
   BaseResponse,
   UpdateTestRunStatsRequest,
   CompleteTestRunRequest,
-  AppResponse,
+  RunnerResponse,
   FindOrCreatePageRequest,
   PageResponse,
   CreatePageStateRequest,
@@ -147,11 +147,11 @@ export class ApiClient {
   }
 
   // ===========================================================================
-  // Apps
+  // Runners
   // ===========================================================================
 
-  getApp(id: number): Promise<AppResponse | null> {
-    return this.get(`/apps/${id}`);
+  getRunner(id: number): Promise<RunnerResponse | null> {
+    return this.get(`/runners/${id}`);
   }
 
   // ===========================================================================
@@ -162,8 +162,11 @@ export class ApiClient {
     return this.get(`/pages/${id}`);
   }
 
-  findOrCreatePage(appId: number, relativePath: string): Promise<PageResponse> {
-    const body: FindOrCreatePageRequest = { appId, relativePath };
+  findOrCreatePage(
+    runnerId: number,
+    relativePath: string
+  ): Promise<PageResponse> {
+    const body: FindOrCreatePageRequest = { runnerId, relativePath };
     return this.post("/pages", body);
   }
 
@@ -171,8 +174,8 @@ export class ApiClient {
     return this.patch(`/pages/${pageId}/requires-login`);
   }
 
-  getPagesByApp(appId: number): Promise<PageResponse[]> {
-    return this.get(`/pages?appId=${appId}`);
+  getPagesByRunner(runnerId: number): Promise<PageResponse[]> {
+    return this.get(`/pages?runnerId=${runnerId}`);
   }
 
   // ===========================================================================
@@ -238,16 +241,16 @@ export class ApiClient {
   // ===========================================================================
 
   createPersona(
-    appId: number,
+    productId: number,
     title: string,
     description: string
   ): Promise<PersonaResponse> {
-    const body: CreatePersonaRequest = { appId, title, description };
+    const body: CreatePersonaRequest = { productId, title, description };
     return this.post("/personas", body);
   }
 
-  getPersonasByApp(appId: number): Promise<PersonaResponse[]> {
-    return this.get(`/personas?appId=${appId}`);
+  getPersonasByProduct(productId: number): Promise<PersonaResponse[]> {
+    return this.get(`/personas?productId=${productId}`);
   }
 
   createUseCase(
@@ -304,15 +307,15 @@ export class ApiClient {
   // ===========================================================================
 
   insertTestCase(
-    appId: number,
+    runnerId: number,
     testCase: TestCase | LegacyTestCase
   ): Promise<TestCaseResponse> {
-    const body = { appId, testCase };
+    const body = { runnerId, testCase };
     return this.post("/test-cases", body);
   }
 
-  getTestCasesByApp(appId: number): Promise<TestCaseResponse[]> {
-    return this.get(`/test-cases?appId=${appId}`);
+  getTestCasesByRunner(runnerId: number): Promise<TestCaseResponse[]> {
+    return this.get(`/test-cases?runnerId=${runnerId}`);
   }
 
   // ===========================================================================
@@ -393,15 +396,15 @@ export class ApiClient {
   // ===========================================================================
 
   insertTestSuite(
-    appId: number,
+    runnerId: number,
     testSuite: TestSuite
   ): Promise<TestSuiteResponse> {
-    const body: InsertTestSuiteRequest = { appId, testSuite };
+    const body: InsertTestSuiteRequest = { runnerId, testSuite };
     return this.post("/test-suites", body);
   }
 
-  getTestSuitesByApp(appId: number): Promise<TestSuiteResponse[]> {
-    return this.get(`/test-suites?appId=${appId}`);
+  getTestSuitesByRunner(runnerId: number): Promise<TestSuiteResponse[]> {
+    return this.get(`/test-suites?runnerId=${runnerId}`);
   }
 
   getTestSuite(id: number): Promise<TestSuiteResponse | null> {
@@ -442,9 +445,9 @@ export class ApiClient {
   }
 
   getReusableHtmlElements(
-    appId: number
+    runnerId: number
   ): Promise<ReusableHtmlElementResponse[]> {
-    return this.get(`/reusable-html-elements?appId=${appId}`);
+    return this.get(`/reusable-html-elements?runnerId=${runnerId}`);
   }
 
   linkPageStateReusableElements(
@@ -503,8 +506,10 @@ export class ApiClient {
     return this.post("/element-identities", params);
   }
 
-  getElementIdentitiesByApp(appId: number): Promise<ElementIdentityResponse[]> {
-    return this.get(`/element-identities?appId=${appId}`);
+  getElementIdentitiesByRunner(
+    runnerId: number
+  ): Promise<ElementIdentityResponse[]> {
+    return this.get(`/element-identities?runnerId=${runnerId}`);
   }
 
   updateElementIdentity(
