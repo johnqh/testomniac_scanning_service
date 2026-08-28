@@ -1,5 +1,10 @@
 # Testomniac Runner Service
 
+> **Git policy — never auto-commit or auto-push.** Leave your work in the working tree.
+> Run `git commit`, `git push`, `gh pr create`, or `scripts/push_all.sh` **only when the user
+> explicitly asks in that turn**. Approval for an earlier change does not carry forward, and
+> finishing a task is not permission to commit it.
+
 Shared execution and discovery library used by Testomniac runner clients.
 
 ## Purpose
@@ -243,3 +248,7 @@ bun run build
 - `testomniac_runner_mcp`: MCP server for AI-driven browser automation
 - `testomniac_api`: persistence and read APIs
 - `testomniac_types`: shared type definitions
+
+## Git Workflow
+
+- Do not use feature branches for code changes. Always stay on the current branch.
